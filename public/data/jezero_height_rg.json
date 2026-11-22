@@ -1,0 +1,16 @@
+{
+  "source": "M20_JezeroCrater_CTXDEM_20m.tif",
+  "doi": "10.5066/P906QQT8",
+  "nativeMetresPerPixel": 20,
+  "nativeSize": 250,
+  "outputSize": 1024,
+  "sizeMetres": 5000,
+  "metresPerPixel": 4.8828125,
+  "minElevation": -2588.89599609375,
+  "maxElevation": -2396.569580078125,
+  "projection": "Equirectangular, Mars 2000 sphere R=3396190, std parallel 18.4663",
+  "windowLeftM": 4349979.999999998,
+  "windowTopM": 1097220.0000000028,
+  "windowCol0": 1049,
+  "windowRow0": 2310
+}
