@@ -32,9 +32,48 @@ The raw GeoTIFF is **not** committed (90 MB). Fetch it from the URL above.
 - Terrain colour is a plain regolith tint by elevation. We do not use the CTX orthomosaic.
 - A higher-resolution alternative exists (HiRISE DTM mosaic, Bland et al. 2024, https://doi.org/10.5066/P13CPYYU, 5.4 GB zip). It was not used.
 
-## Mineral / geology layer
+## Geology: Stack et al. (2020) photogeologic map (real polygons, assumed minerals)
 
-Not added yet. When added it will be labelled "approximate, derived from published unit maps" (Stack et al. 2020; Horgan et al. 2020).
+| Field | Value |
+| --- | --- |
+| Product | Photogeologic Map of the Perseverance Rover Field Site in Jezero Crater, Constructed by the Mars 2020 Science Team (supplementary shapefile `M2020_JEZ_geology_edited_equi0_allquads_v6_archive`) |
+| Reference | Stack, K.M. et al., 2020, Space Science Reviews 216, https://doi.org/10.1007/s11214-020-00739-x |
+| File | https://authors.library.caltech.edu/records/a7qs5-xhq84 (`11214_2020_739_MOESM3_ESM.zip`, 3.5 MB). Mapped at 1:5000 on the 25 cm HiRISE basemap and 1 m HiRISE DTM. |
+| Attributes | `SurfUName` (surface unit), `BedrkUName` (bedrock unit) |
+| Projection | Mars 2000 sphere, equidistant cylindrical, standard parallel 0 |
+| Licence | Not stated in the supplement; it accompanies a journal article. Cite the authors. Check the publisher's terms before redistributing the raw shapefile (we commit only our rasterisation). |
+
+`scripts/prepare_units.py` rasterises the polygons onto the same 1024 x 1024 grid as the heightmap into `public/data/jezero_units.png` (R = bedrock unit id, G = surface unit id) with the legend in `jezero_units.json`. 1,048,539 of 1,048,576 pixels (99.996%) fall inside mapped polygons.
+
+We checked the registration against the DEM: the delta polygons sit on the high ground (mean -2455 m for "Delta blocky") and the crater-floor polygons on the low ground (mean -2557 m for "Crater floor fractured 1"), and the delta polygon edge follows the real scarp.
+
+Units present in the 5 km patch (pixels of 1,048,576): bedrock "Delta blocky" 303k, "Crater floor fractured rough" 305k, "Crater floor fractured 1" 153k, "Delta truncated curvilinear layered" 136k, "Crater floor fractured 2" 108k, "Delta thinly layered" 36k, "Delta thickly layered" 6k, "Margin fractured" 648. Surface: "Undifferentiated smooth" 295k, "Aeolian bedforms, large" 251k, "Minor Cover Us" 68k, "Talus" 32k, "Moderate Cover Us" 27k, "Aeolian bedforms, small" 9k, none 366k.
+
+### How map units become detection classes (`src/world/classes.ts`)
+
+Priority per pixel: steep slope (> 25 deg, from the DEM) > crater (DEM) > possible channel (DEM) > surface unit > bedrock unit.
+
+| Class | Source | Status |
+| --- | --- | --- |
+| hazard: steep slope | DEM slope > 25 deg | real (derived from the DEM) |
+| crater | closed depression at least 5 m deep and about 3.8 ha, from priority-flood fill of the DEM | real (derived; at 20 m posting only large craters survive, one in this patch) |
+| possible dried channel | D8 flow accumulation on the filled DEM >= 350 cells, slope < 12 deg | **speculative**: present-day drainage lines, NOT mapped palaeochannels. Neretva Vallis is not inside the patch |
+| hazard: loose sand | surface unit "Aeolian bedforms, large" | real unit, interpretation as hazard is ours |
+| sand ripples/dunes | surface unit "Aeolian bedforms, small" | real unit |
+| regolith | surface units "Undifferentiated smooth", "Moderate Cover Us", "Talus" | real units, merged |
+| layered delta sediment | bedrock "Delta thinly layered", "Delta thickly layered", "Delta truncated curvilinear layered" | real (unit names say sedimentary layering) |
+| clay-rich outcrop | bedrock "Delta blocky", "Delta layered rough" | **assumed** mineral association |
+| olivine-rich rock | bedrock "Crater floor fractured 1" | **assumed** mineral association |
+| basalt | bedrock "Crater floor fractured 2", "Crater floor fractured rough" | **assumed** mineral association |
+| carbonate-bearing rock | bedrock "Margin fractured", "Crater rim *" | **assumed**; almost absent from this patch (648 px) |
+
+**The map units themselves do not carry mineral labels.** The mineral columns above are approximate, derived from published unit maps and general knowledge of Jezero mineralogy (Horgan et al. 2020 for orbital detections), and they have NOT been verified against per-pixel spectral data. A future improvement is to replace them with CRISM-derived mineral indices (see ROADMAP). Habitability results that depend on these classes inherit that uncertainty.
+
+### What is synthetic
+
+- Rock positions and sizes (4,000 rocks, seeded). Density rises with slope and in talus and falls on sand. Rock colour follows the class of the bedrock unit beneath it.
+- The terrain texture: each class has a typical colour (`CLASS_INFO`), with +-6% per-texel variation and elevation-contour banding on delta units. It is not an orbital image.
+- The camera noise (Gaussian, 2.5 grey levels).
 
 ## Mars constants
 

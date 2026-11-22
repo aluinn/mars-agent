@@ -26,7 +26,7 @@ const DX = [1, -1, 0, 0, 1, 1, -1, -1];
 const DZ = [0, 0, 1, -1, 1, -1, 1, -1];
 
 /** Binary min-heap over (priority, node) with lazy deletion. */
-class MinHeap {
+export class MinHeap {
   private pri: number[] = [];
   private val: number[] = [];
   get size(): number {

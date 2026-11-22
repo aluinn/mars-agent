@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { loadHeightmap } from './terrain/heightmap';
+import { loadWorld } from './world/world';
 import { buildTerrainMesh } from './terrain/terrainMesh';
 import { SceneEnv } from './render/sceneEnv';
 import { RoverView } from './render/roverMesh';
@@ -8,8 +8,13 @@ import { PathLine, buildRocks } from './render/worldView';
 import { Simulation } from './sim/simulation';
 import { formatLocalTime } from './sim/environment';
 import { Hud } from './ui/hud';
+import { EyePanel } from './ui/eyePanel';
+import { MastCamera } from './perception/mastCamera';
+import { IdSpace, rockIdMaterial, terrainIdMaterial } from './perception/idPass';
+import { sunAt } from './sim/environment';
 
 async function main() {
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
   const view = document.getElementById('view') as HTMLDivElement;
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -19,19 +24,31 @@ async function main() {
   const env = new SceneEnv(scene);
   const camera = new THREE.PerspectiveCamera(55, 1, 0.5, 30000);
 
-  const hm = await loadHeightmap();
-  const sim = new Simulation(hm);
-  scene.add(buildTerrainMesh(hm), buildRocks(hm, sim.rocks));
+  const world = await loadWorld();
+  const hm = world.hm;
+  const sim = new Simulation(world);
+  const terrain = buildTerrainMesh(hm, world.geology);
+  const rocksMesh = buildRocks(hm, sim.rocks);
+  scene.add(terrain, rocksMesh);
   const roverView = new RoverView(hm);
   const pathLine = new PathLine(hm);
   scene.add(roverView.group, pathLine.line);
+
+  // Perception: the camera sees the same scene; a hidden flat-colour pass provides ground truth for scoring only.
+  const ids = new IdSpace(world.geology, sim.rocks);
+  terrain.userData.idMaterial = terrainIdMaterial(world.geology);
+  rocksMesh.userData.idMaterial = rockIdMaterial(rocksMesh, ids, sim.rocks);
+  roverView.group.userData.overlay = true;
+  pathLine.line.userData.overlay = true;
+  const mastCam = new MastCamera(ids.lookup);
+  const eye = new EyePanel($('eyeCanvas') as HTMLCanvasElement, $('eyeInfo'), document.querySelector('#eye .tabs') as HTMLElement);
+  $('snapBtn').addEventListener('click', () => sim.agent.requestCapture({ panDeg: 0, tiltDeg: -4, reason: 'manual' }));
 
   camera.position.set(sim.rover.x - 250, 420, sim.rover.z + 700);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.set(sim.rover.x, 60, sim.rover.z);
   controls.update();
 
-  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
   const timeSlider = $<HTMLInputElement>('timeSlider');
   const tauSlider = $<HTMLInputElement>('tauSlider');
   const playBtn = $<HTMLButtonElement>('playBtn');
@@ -100,8 +117,24 @@ async function main() {
       if (document.activeElement !== timeSlider) timeSlider.value = String(sim.clock.localHours);
     }
     renderer.render(scene, camera);
+
+    // Fulfil at most one camera request per frame (three offscreen passes + readback).
+    const req = sim.agent.takeCaptureRequest();
+    if (req) {
+      const sun = sunAt(sim.clock.localHours);
+      const { agent, truth } = mastCam.capture(
+        renderer,
+        scene,
+        req,
+        { x: sim.rover.x, y: sim.rover.y, z: sim.rover.z, headingRad: sim.rover.heading },
+        { simTime: sim.clock.t, sol: sim.clock.sol, localHours: sim.clock.localHours, sunElevationDeg: (sun.elevation * 180) / Math.PI, sunAzimuthDeg: (sun.azimuth * 180) / Math.PI, tau: sim.tau },
+      );
+      sim.agent.receiveFrame(agent); // the agent gets the image + depth only
+      eye.setFrames(agent, truth); // the UI/evaluator also gets the hidden ground truth
+      (window as unknown as { __frames: unknown }).__frames = { agent, truth }; // dev/test hook
+    }
   });
-  (window as unknown as { __sim: Simulation; __scene: THREE.Scene }).__sim = sim;
+  (window as unknown as { __sim: Simulation }).__sim = sim;
   (window as unknown as { __scene: THREE.Scene }).__scene = scene;
 }
 

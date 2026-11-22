@@ -4,6 +4,7 @@ import type { SimClock } from '../sim/clock';
 import { type Battery, type EnergyParams, type PowerMode, drivePowerW, loadW, solarPowerW } from '../sim/energy';
 import { secondsToSunCrossing, sunAt } from '../sim/environment';
 import type { Rover } from '../sim/rover';
+import type { AgentFrame, CaptureRequest } from '../perception/types';
 import type { Rock } from '../world/rocks';
 import { KnownMap } from './knownMap';
 import type { Decision, Observation, Planner } from './planner';
@@ -23,6 +24,8 @@ export interface LogEntry {
 export const HAZCAM_RANGE_M = 14;
 /** Radius around the rover counted as seen for exploration coverage (until the mast camera lands in stage 3). */
 export const SENSE_RADIUS_M = 60;
+const BUCKET_M = 32;
+const bucketKey = (x: number, z: number): number => Math.floor(x / BUCKET_M) * 4096 + Math.floor(z / BUCKET_M);
 
 /**
  * Loop each tick: sense -> detect -> assess -> decide -> act -> report.
@@ -41,19 +44,47 @@ export class Agent {
   private hibernating = false;
   private sawNight = false;
   private nextDecisionT = 0;
+  /** Rocks bucketed in 32 m cells so the hazard camera only checks nearby ones. */
+  private rockBuckets = new Map<number, Rock[]>();
+  private nextLookT = 0;
+  /** Pending camera requests; the renderer layer fulfils them (the agent has no GPU access). */
+  readonly captureQueue: CaptureRequest[] = [];
+  /** Latest image the agent has seen. The agent never sees ground truth. */
+  lastFrame: AgentFrame | null = null;
+  framesTaken = 0;
 
   constructor(
     private rover: Rover,
     private battery: Battery,
     private clock: SimClock,
     private grid: NavGrid,
-    private rocks: Rock[],
+    rocks: Rock[],
     private planner: Planner,
     private energy: EnergyParams,
     public tau: number,
   ) {
     this.known = new KnownMap(grid);
+    for (const r of rocks) {
+      const key = bucketKey(r.x, r.z);
+      const list = this.rockBuckets.get(key);
+      if (list) list.push(r);
+      else this.rockBuckets.set(key, [r]);
+    }
     this.say('report', `agent online, planner ${planner.name}, ${energy.batteryCapacityWh} Wh battery`);
+  }
+
+  takeCaptureRequest(): CaptureRequest | undefined {
+    return this.captureQueue.shift();
+  }
+
+  requestCapture(req: CaptureRequest): void {
+    if (this.captureQueue.length < 6) this.captureQueue.push(req);
+  }
+
+  receiveFrame(f: AgentFrame): void {
+    this.lastFrame = f;
+    this.framesTaken++;
+    this.detect(f);
   }
 
   get plannerName(): string {
@@ -103,6 +134,7 @@ export class Agent {
       this.say('report', `arrived at goal (${this.goal.x.toFixed(0)}, ${this.goal.z.toFixed(0)}), odometer ${this.rover.odometerM.toFixed(0)} m`);
       this.goal = null;
       this.nextDecisionT = this.clock.t + 60;
+      for (const pan of [-24, 0, 24]) this.requestCapture({ panDeg: pan, tiltDeg: -4, reason: 'survey at goal' });
     }
 
     // assess energy
@@ -115,16 +147,27 @@ export class Agent {
   private sense(): void {
     this.known.markExplored(this.rover.x, this.rover.z, SENSE_RADIUS_M);
     let newBlockers = 0;
-    for (const r of this.rocks) {
-      if (this.known.knownRocks.has(r.id)) continue;
-      if (Math.hypot(r.x - this.rover.x, r.z - this.rover.z) <= HAZCAM_RANGE_M && this.known.learnRock(r)) newBlockers++;
+    for (let dz = -1; dz <= 1; dz++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const list = this.rockBuckets.get(bucketKey(this.rover.x + dx * BUCKET_M, this.rover.z + dz * BUCKET_M));
+        if (!list) continue;
+        for (const r of list) {
+          if (this.known.knownRocks.has(r.id)) continue;
+          if (Math.hypot(r.x - this.rover.x, r.z - this.rover.z) <= HAZCAM_RANGE_M && this.known.learnRock(r)) newBlockers++;
+        }
+      }
     }
     if (newBlockers > 0) this.say('sense', `hazcam: ${newBlockers} new boulder${newBlockers > 1 ? 's' : ''} marked as obstacles`);
-    this.detect();
+    // Look around: a short look-ahead image while driving, a 3-frame sweep after stopping (daylight only).
+    const sunDeg = (sunAt(this.clock.localHours).elevation * 180) / Math.PI;
+    if (!this.hibernating && sunDeg > 8 && this.clock.t >= this.nextLookT) {
+      this.nextLookT = this.clock.t + (this.rover.driving ? 600 : 1800);
+      this.requestCapture({ panDeg: 0, tiltDeg: -4, reason: this.rover.driving ? 'drive look-ahead' : 'survey' });
+    }
   }
 
-  /** Hook: mast-camera detector runs here from stage 4. */
-  private detect(): void {}
+  /** Hook: the mast-camera detector runs on each received frame from stage 4. */
+  private detect(_frame: AgentFrame): void {}
 
   private requestDecision(sunDeg: number): void {
     const lh = this.clock.localHours;

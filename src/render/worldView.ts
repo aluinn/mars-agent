@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import type { Heightmap } from '../terrain/heightmap';
 import type { PathPoint } from '../nav/astar';
+import { CLASS_INFO } from '../world/classes';
 import type { Rock } from '../world/rocks';
 
 export function buildRocks(hm: Heightmap, rocks: Rock[]): THREE.InstancedMesh {
-  const mesh = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshLambertMaterial({ color: 0x4a3f38 }), rocks.length);
+  const mesh = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshLambertMaterial({ color: 0xffffff }), rocks.length);
+  const col = new THREE.Color();
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const e = new THREE.Euler();
@@ -13,8 +15,13 @@ export function buildRocks(hm: Heightmap, rocks: Rock[]): THREE.InstancedMesh {
     q.setFromEuler(e);
     m.compose(new THREE.Vector3(r.x, hm.heightAt(r.x, r.z) + r.radius * 0.4, r.z), q, new THREE.Vector3(r.radius, r.radius * 0.7, r.radius));
     mesh.setMatrixAt(i, m);
+    // Rock colour follows its (assumed) lithology, darkened so rocks read as rock against the ground.
+    const a = CLASS_INFO[r.lithology]?.albedo ?? [90, 80, 70];
+    col.setRGB((a[0] * 0.7) / 255, (a[1] * 0.7) / 255, (a[2] * 0.7) / 255, THREE.SRGBColorSpace);
+    mesh.setColorAt(i, col);
   });
   mesh.instanceMatrix.needsUpdate = true;
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   mesh.name = 'rocks';
   return mesh;
 }

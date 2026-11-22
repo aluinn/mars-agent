@@ -63,10 +63,10 @@ export function decodePackedHeights(rgba: Uint8ClampedArray | Uint8Array, size: 
   return new Heightmap(size, meta.sizeMetres, out, meta);
 }
 
-export async function loadHeightmap(base = '/data/jezero_height_rg'): Promise<Heightmap> {
-  const meta = (await (await fetch(`${base}.json`)).json()) as HeightmapMeta;
+/** Decode an image URL into RGBA bytes via a 2D canvas (no colour conversion for plain PNGs). */
+export async function loadImagePixels(url: string): Promise<{ width: number; height: number; data: Uint8ClampedArray }> {
   const img = new Image();
-  img.src = `${base}.png`;
+  img.src = url;
   await img.decode();
   const c = document.createElement('canvas');
   c.width = img.width;
@@ -75,8 +75,13 @@ export async function loadHeightmap(base = '/data/jezero_height_rg'): Promise<He
   if (!ctx) throw new Error('2D canvas unavailable');
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(img, 0, 0);
-  const px = ctx.getImageData(0, 0, img.width, img.height).data;
-  return decodePackedHeights(px, img.width, meta);
+  return { width: img.width, height: img.height, data: ctx.getImageData(0, 0, img.width, img.height).data };
+}
+
+export async function loadHeightmap(base = '/data/jezero_height_rg'): Promise<Heightmap> {
+  const meta = (await (await fetch(`${base}.json`)).json()) as HeightmapMeta;
+  const px = await loadImagePixels(`${base}.png`);
+  return decodePackedHeights(px.data, px.width, meta);
 }
 
 const MARS_RADIUS_M = 3396190;

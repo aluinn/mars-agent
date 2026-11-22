@@ -20,3 +20,11 @@ button:hover { border-color:var(--accent); cursor:pointer; }
 #hud .log { margin-top:6px; color:var(--dim); font-size:11px; max-height:140px; overflow:hidden; }
 #hud .log div { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #hud .mode { color:var(--accent); font-weight:700; }
+#eye { right:12px; bottom:12px; width:344px; }
+#eye .eyehead { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+#eye .eyehead strong { font-size:11px; letter-spacing:.14em; color:var(--dim); }
+#eye .tabs { flex:1; display:flex; gap:4px; }
+#eye .tabs button.on { border-color:var(--accent); color:var(--accent); }
+#eye button { padding:2px 7px; font-size:11px; }
+#eyeCanvas { display:block; width:320px; height:240px; background:#000; border:1px solid var(--line); }
+#eyeInfo { margin-top:4px; color:var(--dim); font-size:11px; }

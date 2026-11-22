@@ -21,6 +21,19 @@
       </header>
       <div id="view">
         <div id="hud" class="panel"></div>
+        <div id="eye" class="panel">
+          <div class="eyehead">
+            <strong>ROVER EYE</strong>
+            <span class="tabs">
+              <button data-view="rgb" class="on">Camera</button>
+              <button data-view="depth">Depth</button>
+              <button data-view="truth" title="Ground truth, for evaluation only">Truth</button>
+            </span>
+            <button id="snapBtn" title="Take an image now">Capture</button>
+          </div>
+          <canvas id="eyeCanvas" width="640" height="480"></canvas>
+          <div id="eyeInfo">no image yet</div>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

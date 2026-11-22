@@ -1,9 +1,10 @@
 import { Agent } from '../agent/agent';
 import type { Planner } from '../agent/planner';
 import { UtilityPlanner } from '../agent/utilityPlanner';
-import { type NavGrid, buildNavGrid } from '../nav/navgrid';
+import type { NavGrid } from '../nav/navgrid';
 import { type Heightmap, latLonToWorld } from '../terrain/heightmap';
-import { generateRocks, type Rock } from '../world/rocks';
+import type { Rock } from '../world/rocks';
+import type { World } from '../world/world';
 import { SimClock } from './clock';
 import { Battery, DEFAULT_ENERGY, type EnergyParams } from './energy';
 import { Rover } from './rover';
@@ -23,15 +24,19 @@ export class Simulation {
   speed = 600;
   paused = false;
 
+  readonly hm: Heightmap;
+
   constructor(
-    readonly hm: Heightmap,
+    readonly world: World,
     planner: Planner = new UtilityPlanner(),
     energy: EnergyParams = DEFAULT_ENERGY,
     startLocalHours = 8,
   ) {
+    const hm = world.hm;
+    this.hm = hm;
     this.clock = new SimClock(startLocalHours);
-    this.grid = buildNavGrid(hm, 1);
-    this.rocks = generateRocks(hm);
+    this.grid = world.grid;
+    this.rocks = world.rocks;
     const p = latLonToWorld(hm.meta, LANDING.lat, LANDING.lon);
     // Keep the start inside the patch (the landing site is near its south-east corner).
     const lim = hm.sizeMetres / 2 - 150;

@@ -47,7 +47,7 @@ export function atmosphereAt(sunElevation: number, tau: number): Atmosphere {
     (0.58 - 0.12 * dust) * day,
     (0.38 - 0.1 * dust) * day,
   ];
-  return { directFactor: direct, diffuseFactor: diffuse, sky, fogDensity: 0.00006 + 0.00018 * tau };
+  return { directFactor: direct, diffuseFactor: diffuse, sky, fogDensity: 0.00025 + 0.00035 * tau };
 }
 
 /** Local mean solar time as HH:MM in Mars hours (1/24 of a sol; a Mars hour is ~61.7 Earth minutes). */

@@ -1,0 +1,50 @@
+{
+  "source": "Stack et al. 2020 photogeologic map (supplementary shapefile)",
+  "doi": "10.1007/s11214-020-00739-x",
+  "bedrock": [
+    "Margin fractured",
+    "Neretva Vallis layered",
+    "Delta blocky",
+    "Crater floor fractured 2",
+    "Delta thinly layered",
+    "Crater rim blocky",
+    "Nili Planum fractured",
+    "Crater rim layered",
+    "Crater floor fractured 1",
+    "Crater floor fractured rough",
+    "Crater rim breccia",
+    "Delta truncated curvilinear layered",
+    "Crater rim rough",
+    "Delta layered rough",
+    "Delta thickly layered"
+  ],
+  "surface": [
+    "Undifferentiated smooth",
+    "Aeolian bedforms, large",
+    "None",
+    "Aeolian bedforms, small",
+    "Talus",
+    "Moderate Cover Us",
+    "Minor Cover Us"
+  ],
+  "pixelsBedrock": {
+    "Margin fractured": 648,
+    "Delta blocky": 303310,
+    "Crater floor fractured 2": 108447,
+    "Delta thinly layered": 35652,
+    "Crater floor fractured 1": 153198,
+    "Crater floor fractured rough": 304921,
+    "Delta truncated curvilinear layered": 136200,
+    "Delta thickly layered": 6163
+  },
+  "pixelsSurface": {
+    "Undifferentiated smooth": 294719,
+    "Aeolian bedforms, large": 250744,
+    "None": 366393,
+    "Aeolian bedforms, small": 9337,
+    "Talus": 32067,
+    "Moderate Cover Us": 27470,
+    "Minor Cover Us": 67809
+  },
+  "uncoveredPixels": 37
+}
