@@ -1,4 +1,4 @@
-import { JEZERO_LAT_DEG, MARS_OBLIQUITY_DEG } from './constants';
+import { JEZERO_LAT_DEG, MARS_OBLIQUITY_DEG, SOL_SECONDS } from './constants';
 
 const rad = (d: number) => (d * Math.PI) / 180;
 
@@ -56,4 +56,24 @@ export function formatLocalTime(hours: number): string {
   const h = Math.floor(total);
   const m = Math.floor((total - h) * 60);
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * Sim seconds until the sun next crosses `thresholdDeg` going down ('set') or up ('rise').
+ * Scans forward in 5-minute steps (error < 5 min). Returns 0 if already past it in that direction
+ * is not the case: e.g. asking 'set' while the sun is already below returns the time to the NEXT sunset.
+ */
+export function secondsToSunCrossing(localHours: number, thresholdDeg: number, dir: 'set' | 'rise', lsDeg = 5): number {
+  const stepS = 300;
+  const stepH = (stepS / SOL_SECONDS) * 24;
+  const th = (thresholdDeg * Math.PI) / 180;
+  const above = (h: number) => sunAt(h, lsDeg).elevation > th;
+  let prev = above(localHours);
+  for (let s = 1; s * stepS < SOL_SECONDS * 1.5; s++) {
+    const cur = above(localHours + s * stepH);
+    if (dir === 'set' && prev && !cur) return s * stepS;
+    if (dir === 'rise' && !prev && cur) return s * stepS;
+    prev = cur;
+  }
+  return Infinity;
 }

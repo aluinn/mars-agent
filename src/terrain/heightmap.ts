@@ -6,6 +6,8 @@ export interface HeightmapMeta {
   maxElevation: number;
   source: string;
   doi: string;
+  windowLeftM: number;
+  windowTopM: number;
 }
 
 /** Elevation grid in metres, row 0 = north edge, relative to the patch minimum. */
@@ -75,4 +77,15 @@ export async function loadHeightmap(base = '/data/jezero_height_rg'): Promise<He
   ctx.drawImage(img, 0, 0);
   const px = ctx.getImageData(0, 0, img.width, img.height).data;
   return decodePackedHeights(px, img.width, meta);
+}
+
+const MARS_RADIUS_M = 3396190;
+const STD_PARALLEL_DEG = 18.4663;
+
+/** Convert planetocentric lat/lon (degrees) to patch world coordinates (x east, z south, metres from centre). */
+export function latLonToWorld(meta: HeightmapMeta, latDeg: number, lonDeg: number): { x: number; z: number } {
+  const X = MARS_RADIUS_M * ((lonDeg * Math.PI) / 180) * Math.cos((STD_PARALLEL_DEG * Math.PI) / 180);
+  const Y = MARS_RADIUS_M * ((latDeg * Math.PI) / 180);
+  const half = meta.sizeMetres / 2;
+  return { x: X - meta.windowLeftM - half, z: meta.windowTopM - Y - half };
 }

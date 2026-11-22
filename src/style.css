@@ -9,3 +9,14 @@ html, body { margin:0; height:100%; background:var(--bg); color:var(--text); fon
 #view canvas { display:block; width:100%; height:100%; }
 input[type=range] { vertical-align:middle; accent-color:var(--accent); }
 #envReadout, #clock { color:var(--dim); }
+button, select { background:#1b222b; color:var(--text); border:1px solid var(--line); border-radius:4px; padding:3px 8px; font:inherit; }
+button:hover { border-color:var(--accent); cursor:pointer; }
+.panel { position:absolute; background:rgba(18,22,27,.88); border:1px solid var(--line); border-radius:6px; padding:10px 12px; backdrop-filter:blur(4px); }
+#hud { left:12px; bottom:12px; width:360px; max-height:55%; overflow:hidden; }
+#hud h3 { margin:0 0 6px; font-size:11px; letter-spacing:.14em; color:var(--dim); font-weight:600; }
+#hud .row { display:flex; justify-content:space-between; gap:8px; }
+#hud .bar { height:6px; background:#222a33; border-radius:3px; margin:4px 0 8px; overflow:hidden; }
+#hud .bar > i { display:block; height:100%; background:var(--accent); }
+#hud .log { margin-top:6px; color:var(--dim); font-size:11px; max-height:140px; overflow:hidden; }
+#hud .log div { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#hud .mode { color:var(--accent); font-weight:700; }
