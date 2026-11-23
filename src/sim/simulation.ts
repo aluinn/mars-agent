@@ -1,4 +1,6 @@
 import { Agent } from '../agent/agent';
+import { EarthLink } from '../earth/link';
+import { NoveltyTracker } from '../earth/priority';
 import type { Planner } from '../agent/planner';
 import { UtilityPlanner } from '../agent/utilityPlanner';
 import type { NavGrid } from '../nav/navgrid';
@@ -19,6 +21,11 @@ export class Simulation {
   readonly rover: Rover;
   readonly battery: Battery;
   readonly agent: Agent;
+  /** Limited-bandwidth downlink to Earth, with light-time delay and a priority queue. */
+  readonly earth = new EarthLink();
+  readonly novelty = new NoveltyTracker();
+  /** Radio draw while transmitting (UHF relay), watts. ASSUMED. */
+  static readonly RADIO_W = 15;
   tau = 0.6;
   /** Sim seconds advanced per real second. */
   speed = 600;
@@ -43,6 +50,12 @@ export class Simulation {
     this.rover = new Rover(hm, start.x, start.z);
     this.battery = new Battery(energy);
     this.agent = new Agent(this.rover, this.battery, this.clock, this.grid, this.rocks, planner, energy, this.tau);
+    this.agent.noteSink = (n) =>
+      this.earth.enqueue({ kind: 'note', title: `${n.severity} note`, createdT: n.t, sizeBits: 8 * (96 + n.text.length), value: 0, severity: n.severity, payload: { text: n.text, severity: n.severity } }, n.t);
+    this.earth.onSent = (it) => {
+      const dets = (it.payload as { detections?: { cls: number; x: number; z: number }[] } | null)?.detections;
+      if (it.kind === 'image' && dets) for (const d of dets) this.novelty.markSent(d.cls, d.x, d.z);
+    };
   }
 
   /** Advance by `realDt` wall seconds, in sub-steps of at most 10 sim seconds. */
@@ -53,7 +66,9 @@ export class Simulation {
     while (remaining > 1e-9) {
       const dt = Math.min(10, remaining);
       this.clock.t += dt;
+      this.agent.extraLoadW = this.earth.transmitting ? Simulation.RADIO_W : 0;
       this.agent.step(dt);
+      this.earth.step(this.clock.t, dt, this.clock.startLocalHours);
       remaining -= dt;
     }
   }

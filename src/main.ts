@@ -16,6 +16,8 @@ import { IdSpace, rockIdMaterial, terrainIdMaterial } from './perception/idPass'
 import { Detector } from './perception/detector';
 import { loadDetectorModel, loadReliability } from './perception/modelLoader';
 import { HabitabilityPanel } from './ui/habitabilityPanel';
+import { EarthPanel } from './ui/earthPanel';
+import { submitFrame } from './earth/submit';
 import { Metrics, scoreFrame } from './perception/scoring';
 import { PerceptionPanel } from './ui/perceptionPanel';
 import { installLab } from './perception/lab';
@@ -65,6 +67,7 @@ async function main() {
   sim.agent.setReliability(reliability);
   const habPanel = new HabitabilityPanel(sim.agent.habitability, () => ({ tau: sim.tau, hours: sim.clock.localHours }));
   const heatBtn = $('togHeat');
+  const earthPanel = new EarthPanel(sim);
   installLab({ renderer, scene, env, mastCam, sim });
   const eye = new EyePanel($('eyeCanvas') as HTMLCanvasElement, $('eyeInfo'), document.querySelector('#eyeCard .tabs') as HTMLElement);
   const hud = new Hud(sim);
@@ -232,6 +235,7 @@ async function main() {
       }
       minimap.draw(sim.rover, sim.rover.remaining, sim.agent.goal, { cells: heatCells, n: hab.n, key: heatKey });
       habPanel.update();
+      earthPanel.update();
     }
     renderer.render(scene, camera);
     chasePass(dt);
@@ -258,6 +262,7 @@ async function main() {
         percPanel.update();
       }
       eye.setFrames(agent, truth, res, score);
+      void submitFrame(sim.earth, sim.novelty, agent, res, reliability, sim.clock.t);
       (window as unknown as { __frames: unknown }).__frames = { agent, truth }; // dev/test hook
     }
   });

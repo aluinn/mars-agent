@@ -32,6 +32,7 @@
           <label title="Local time of day">☀ <input id="timeSlider" type="range" min="0" max="24" step="0.05" value="8" /></label>
           <label title="Dust opacity (tau)">τ <input id="tauSlider" type="range" min="0.2" max="4" step="0.05" value="0.6" /></label>
         </div>
+        <button id="earthBtn" title="Mission control: Earth link (E)">Earth<span id="earthBadge" class="badge" hidden></span></button>
         <button id="habBtn" title="Habitability assessment (H)">Habitability</button>
         <button id="percBtn" title="Perception statistics (P)">Perception</button>
         <div class="chip env-readout"><span id="sunChip">sun —</span><i></i><span id="tauChip">τ —</span></div>
@@ -93,6 +94,32 @@
           </section>
         </aside>
 
+        <section class="card" id="earthCard" hidden>
+          <header class="card-h"><h3>Mission Control · Earth</h3><span class="dim small" id="earthClock"></span></header>
+          <div id="earthStats" class="es-row"></div>
+          <label class="ltrow" title="Divide the Earth-Mars light-time delay so the demo is not slow. 1× is the real delay.">Light-time speed-up
+            <input id="ltSlider" type="range" min="0" max="3" step="0.05" value="0" /><b id="ltVal">1×</b>
+          </label>
+          <div class="earth-body">
+            <div>
+              <div class="sub">Received at Earth</div>
+              <div id="earthFeed" class="feed"></div>
+            </div>
+            <div>
+              <div class="sub">Selected image, annotated by the rover</div>
+              <canvas id="earthDetail" width="640" height="480"></canvas>
+              <div id="earthDetailInfo" class="small"></div>
+            </div>
+          </div>
+          <div class="earth-body2">
+            <div><div class="sub">Downlink queue (highest priority first)</div><div id="earthQueue"></div></div>
+            <div><div class="sub">Rover notes received</div><ol id="earthNotes"></ol></div>
+          </div>
+          <div class="sub" id="timelineTitle">Timeline</div>
+          <canvas id="timelineCanvas" width="860" height="92"></canvas>
+          <div class="legend small dim" style="margin-top:6px"><span><i style="background:#5cc8ff"></i>relay pass</span><span><i style="background:#ff8a3d"></i>sent</span><span><i style="background:#4ade80"></i>received at Earth</span><span><i style="background:rgba(255,200,120,.6)"></i>daylight</span></div>
+        </section>
+
         <div id="dock">
         <section class="card" id="habCard" hidden>
           <header class="card-h"><h3>Habitability · what the rover has found</h3><span class="score-pill"><b id="habScore">0</b><small>/100</small></span></header>
@@ -113,7 +140,7 @@
         </section>
         </div>
 
-        <footer id="hints" class="dim small">Space pause · 1–5 speed · O / F camera · C capture · P perception · H habitability · drag to orbit, scroll to zoom</footer>
+        <footer id="hints" class="dim small">Space pause · 1–5 speed · O / F camera · C capture · P perception · H habitability · E Earth · drag to orbit, scroll to zoom</footer>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

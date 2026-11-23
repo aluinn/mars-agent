@@ -7,6 +7,7 @@ import type { Rover } from '../sim/rover';
 import type { Detection, DetectionResult, Detector } from '../perception/detector';
 import type { AgentFrame, CaptureRequest } from '../perception/types';
 import type { Rock } from '../world/rocks';
+import type { Severity } from '../earth/link';
 import { HabitabilityMap, type Reliability, type VerdictLevel } from '../habitability/model';
 import { KnownMap } from './knownMap';
 import type { Decision, Observation, Planner } from './planner';
@@ -60,6 +61,10 @@ export class Agent {
   detector: Detector | null = null;
   /** The agent's belief about habitability, built only from its own detections. */
   readonly habitability: HabitabilityMap;
+  /** Extra electrical load (W), e.g. the radio while transmitting; set by the simulation. */
+  extraLoadW = 0;
+  /** Receives rover notes destined for Earth (severity decides how urgently they are sent). */
+  noteSink: ((n: { severity: Severity; text: string; t: number; sol: number }) => void) | null = null;
   private lastLevel: VerdictLevel = 'none';
   private loggedClasses = new Set<number>();
 
@@ -110,7 +115,8 @@ export class Agent {
     return this.planner.name;
   }
 
-  say(stage: LogEntry['stage'], text: string): void {
+  say(stage: LogEntry['stage'], text: string, severity?: Severity): void {
+    if (severity) this.noteSink?.({ severity, text, t: this.clock.t, sol: this.clock.sol });
     this.log.push({ t: this.clock.t, sol: this.clock.sol, localHours: this.clock.localHours, stage, text });
     if (this.log.length > 400) this.log.splice(0, 100);
   }
@@ -134,7 +140,7 @@ export class Agent {
         this.hibernating = false;
         this.sawNight = false;
         this.mode = 'idle';
-        this.say('report', `waking at ${sunDeg.toFixed(1)}° sun, battery ${(this.battery.soc * 100).toFixed(0)}%`);
+        this.say('report', `waking at ${sunDeg.toFixed(1)}° sun, battery ${(this.battery.soc * 100).toFixed(0)}%`, 'info');
       }
     }
 
@@ -150,7 +156,7 @@ export class Agent {
     else this.rover.stop();
     if (this.mode !== 'thinking' || this.hibernating) this.mode = this.hibernating ? 'hibernating' : this.rover.driving ? 'driving' : 'idle';
     if (this.goal && !this.rover.driving) {
-      this.say('report', `arrived at goal (${this.goal.x.toFixed(0)}, ${this.goal.z.toFixed(0)}), odometer ${this.rover.odometerM.toFixed(0)} m`);
+      this.say('report', `arrived at goal (${this.goal.x.toFixed(0)}, ${this.goal.z.toFixed(0)}), odometer ${this.rover.odometerM.toFixed(0)} m`, 'info');
       this.goal = null;
       this.nextDecisionT = this.clock.t + 60;
       for (const pan of [-24, 0, 24]) this.requestCapture({ panDeg: pan, tiltDeg: -4, reason: 'survey at goal' });
@@ -158,7 +164,7 @@ export class Agent {
 
     // assess energy
     const gen = solarPowerW(this.energy, sun.elevation, this.tau);
-    const con = (mode === 'drive' ? drivePowerW(this.energy, this.rover.speed, this.rover.climbRate) : 0) + loadW(this.energy, mode, mode !== 'hibernate');
+    const con = (mode === 'drive' ? drivePowerW(this.energy, this.rover.speed, this.rover.climbRate) : 0) + loadW(this.energy, mode, mode !== 'hibernate') + this.extraLoadW;
     this.battery.step(gen, con, dt);
     this.powerW = { generated: gen, consumed: con };
   }
@@ -191,13 +197,13 @@ export class Agent {
       this.habitability.add(d, this.clock.sol, this.clock.t);
       if (d.confidence >= 0.3 && d.kind === 'terrain' && !this.loggedClasses.has(d.cls) && this.habitability.log.some((l) => l.cls === d.cls)) {
         this.loggedClasses.add(d.cls);
-        this.say('assess', `first notable ${d.name} (${(d.confidence * 100).toFixed(0)}% confidence) near (${d.world.x.toFixed(0)}, ${d.world.z.toFixed(0)})`);
+        this.say('assess', `first notable ${d.name} (${(d.confidence * 100).toFixed(0)}% confidence) near (${d.world.x.toFixed(0)}, ${d.world.z.toFixed(0)})`, 'science');
       }
     }
     const v = this.habitability.verdict(this.tau, this.clock.localHours);
     if (v.level !== this.lastLevel) {
       this.lastLevel = v.level;
-      this.say('assess', `habitability assessment now: ${v.headline.toLowerCase()}`);
+      this.say('assess', `habitability assessment now: ${v.headline.toLowerCase()}`, 'science');
     }
   }
 
@@ -248,7 +254,7 @@ export class Agent {
   }
 
   private apply(d: Decision): void {
-    this.say('decide', `${d.kind}: ${d.reason}`);
+    this.say('decide', `${d.kind}: ${d.reason}`, d.kind === 'hibernate' ? 'info' : d.kind === 'wait' && d.reason.includes('battery') ? 'safety' : undefined);
     if (d.kind === 'drive') {
       this.goal = d.goal;
       this.rover.setPath(d.path.points);
@@ -278,7 +284,7 @@ export class Agent {
           this.rover.setPath(np.points);
           this.say('act', `new obstacle ahead, replanned (${np.lengthM.toFixed(0)} m)`);
         } else {
-          this.say('act', 'goal now unreachable, abandoning drive');
+          this.say('act', 'goal now unreachable, abandoning drive', 'info');
           this.rover.stop();
           this.goal = null;
           this.nextDecisionT = this.clock.t + 60;
