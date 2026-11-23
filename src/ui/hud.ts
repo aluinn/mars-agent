@@ -55,7 +55,7 @@ export class Hud {
       el.logCount.textContent = `${a.log.length} events`;
       el.log.replaceChildren(
         ...a.log
-          .slice(-7)
+          .slice(-5)
           .reverse()
           .map((l) => {
             const li = document.createElement('li');

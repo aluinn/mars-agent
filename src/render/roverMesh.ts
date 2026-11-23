@@ -82,6 +82,11 @@ export class RoverView {
     this.group.add(this.marker);
   }
 
+  /** The orbit locator ring is only for the main view; the chase cam hides it. */
+  setMarker(on: boolean): void {
+    this.marker.visible = on;
+  }
+
   update(r: Rover, camera: THREE.Camera): void {
     const y = r.y;
     this.group.position.set(r.x, y, r.z);

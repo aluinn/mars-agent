@@ -57,6 +57,39 @@ async function main() {
   const hud = new Hud(sim);
   const minimap = new MiniMap($('mapCanvas') as HTMLCanvasElement, world, sim.agent.known);
 
+  // Second screen: a smoothed chase camera behind and above the rover, drawn into the #chaseView window.
+  const chaseCam = new THREE.PerspectiveCamera(48, 16 / 9, 0.3, 14000);
+  const chaseEl = $('chaseView');
+  const chaseSpeed = $('chaseSpeed');
+  const chasePos = new THREE.Vector3();
+  let chaseReady = false;
+  function chasePass(dt: number): void {
+    const r = chaseEl.getBoundingClientRect();
+    const c = renderer.domElement.getBoundingClientRect();
+    const x = r.left - c.left;
+    const y = r.top - c.top;
+    if (r.width < 16 || r.height < 16 || x < 0 || y < 0 || x + r.width > c.width + 1 || y + r.height > c.height + 1) return; // not on the canvas (narrow layouts)
+    const h = sim.rover.heading;
+    const rp = new THREE.Vector3(sim.rover.x, sim.rover.y, sim.rover.z);
+    const want = new THREE.Vector3(rp.x - Math.sin(h) * 9 + Math.cos(h) * 3.4, 0, rp.z - Math.cos(h) * 9 - Math.sin(h) * 3.4);
+    want.y = Math.max(rp.y + 3.6, hm.heightAt(want.x, want.z) + 2);
+    if (!chaseReady) {
+      chasePos.copy(want);
+      chaseReady = true;
+    } else chasePos.lerp(want, 1 - Math.exp(-dt * 2.5));
+    chaseCam.position.copy(chasePos);
+    chaseCam.lookAt(rp.x, rp.y + 1.1, rp.z);
+    chaseCam.aspect = r.width / r.height;
+    chaseCam.updateProjectionMatrix();
+    renderer.setScissorTest(true);
+    renderer.setViewport(x, c.height - y - r.height, r.width, r.height);
+    renderer.setScissor(x, c.height - y - r.height, r.width, r.height);
+    roverView.setMarker(false);
+    renderer.render(scene, chaseCam);
+    renderer.setScissorTest(false);
+    renderer.setViewport(0, 0, c.width, c.height);
+  }
+
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
@@ -174,6 +207,8 @@ async function main() {
       minimap.draw(sim.rover, sim.rover.remaining, sim.agent.goal);
     }
     renderer.render(scene, camera);
+    chasePass(dt);
+    chaseSpeed.textContent = `${sim.rover.speed.toFixed(2)} m/s`;
 
     // Fulfil at most one camera request per frame (three offscreen passes + readback).
     const req = sim.agent.takeCaptureRequest();
