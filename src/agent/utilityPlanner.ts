@@ -7,11 +7,13 @@ import type { Decision, Observation, Planner } from './planner';
 export interface UtilityWeights {
   unexplored: number;
   interest: number;
+  /** Pull toward places where detected evidence looks promising (exploit). */
+  habitability: number;
   distance: number;
   energy: number;
 }
 
-export const DEFAULT_WEIGHTS: UtilityWeights = { unexplored: 1.0, interest: 0.6, distance: 0.25, energy: 0.3 };
+export const DEFAULT_WEIGHTS: UtilityWeights = { unexplored: 1.0, interest: 0.4, habitability: 1.2, distance: 0.25, energy: 0.3 };
 
 /** Working threshold: the rover stops driving when the sun is lower than this. */
 export const WORK_SUN_DEG = 6;
@@ -21,7 +23,7 @@ export const SUNSET_MARGIN_S = 1800;
 /**
  * Rule + utility planner. Rules first (night, low battery, no time before sunset), then pick the goal with the
  * highest science-value utility among reachable candidates that fit in the remaining daylight and energy budget.
- * Science value here = unexplored area + orbital relief proxy. Habitability evidence joins in stage 5.
+ * Science value = unexplored area (uncertainty) + orbital relief proxy + habitability interest (the agent's own detected evidence).
  */
 export class UtilityPlanner implements Planner {
   readonly name = 'utility-v1';
@@ -52,7 +54,8 @@ export class UtilityPlanner implements Planner {
       const un = o.known.unexploredNear(p.x, p.z, 80);
       const interest = o.known.interest[o.known.coarseIndex(p.x, p.z)]!;
       const rough = (d / this.maxDriveM) * this.weights.distance;
-      cands.push({ p, u: this.weights.unexplored * un + this.weights.interest * interest - rough });
+      const hab = o.habitability.interestAt(p.x, p.z, o.tau, o.localHours);
+      cands.push({ p, u: this.weights.unexplored * un + this.weights.interest * interest + this.weights.habitability * hab - rough });
     }
     cands.sort((a, b) => b.u - a.u);
 

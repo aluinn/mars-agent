@@ -33,6 +33,8 @@ export interface Detection {
   factors: Visibility;
   /** Terrain regions: tile indices (tw-wide grid). */
   tiles?: number[];
+  /** Terrain regions: a sample of ground points (x east, z south) the region covers, within trustworthy range. */
+  footprint?: { x: number; z: number }[];
 }
 
 export interface DetectionResult {
@@ -189,12 +191,22 @@ export class Detector {
       const vis = visibility(range, sunEl, tau, edge / tiles.length);
       const cx = (x0 + x1 + 1) * 0.5 * TILE, cy = (y0 + y1 + 1) * 0.5 * TILE;
       pointAt(b, cx, cy, range, P);
+      const cwx = P[0], cwz = P[2];
       const cls = model.classes[k]!.id;
       for (const t of tiles) tileClass[t] = cls;
+      // ground footprint: up to 24 evenly spaced tiles within 450 m, each located with its own range
+      const near = tiles.filter((t) => grid.range[t]! <= 450);
+      const step = Math.max(1, Math.floor(near.length / 24));
+      const footprint: { x: number; z: number }[] = [];
+      for (let q = 0; q < near.length; q += step) {
+        const t = near[q]!;
+        pointAt(b, ((t % tw) + 0.5) * TILE, (((t / tw) | 0) + 0.5) * TILE, grid.range[t]!, P);
+        footprint.push({ x: P[0], z: P[2] });
+      }
       out.push({
         id: 0, cls, name: className(cls), kind: 'terrain', confidence: combine(raw, vis), rawProb: raw,
         bbox: { x0: x0 * TILE, y0: y0 * TILE, x1: (x1 + 1) * TILE, y1: (y1 + 1) * TILE },
-        rangeM: range, areaPx: tiles.length * TILE * TILE, world: { x: P[0], z: P[2] }, factors: vis, tiles,
+        rangeM: range, areaPx: tiles.length * TILE * TILE, world: { x: cwx, z: cwz }, factors: vis, tiles, footprint,
       });
     }
   }

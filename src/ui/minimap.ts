@@ -11,6 +11,9 @@ export class MiniMap {
   private mask = document.createElement('canvas');
   private tmp: HTMLCanvasElement;
   private lastExplored = -1;
+  private heatCanvas = document.createElement('canvas');
+  private heatKey = '';
+  showHeat = true;
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -60,7 +63,29 @@ export class MiniMap {
     return c;
   }
 
-  draw(rover: { x: number; z: number; heading: number }, path: PathPoint[], goal: PathPoint | null): void {
+  /** Draw the habitability heatmap: one coloured cell per map cell with evidence (alpha rises with the score). */
+  private drawHeat(ctx: CanvasRenderingContext2D, W: number, heat: Float32Array, n: number, key: string): void {
+    if (key !== this.heatKey) {
+      this.heatKey = key;
+      this.heatCanvas.width = this.heatCanvas.height = n;
+      const x = this.heatCanvas.getContext('2d')!;
+      const id = x.createImageData(n, n);
+      const ramp = [[42, 27, 77], [138, 47, 122], [232, 96, 60], [255, 217, 61]];
+      for (let k = 0; k < heat.length; k++) {
+        const v = heat[k]!;
+        if (v < 0) continue;
+        const t = Math.min(1, v / 0.15) * 3;
+        const i = Math.min(2, Math.floor(t)), f = t - i;
+        for (let c = 0; c < 3; c++) id.data[k * 4 + c] = ramp[i]![c]! * (1 - f) + ramp[i + 1]![c]! * f;
+        id.data[k * 4 + 3] = 90 + 130 * Math.min(1, v / 0.15);
+      }
+      x.putImageData(id, 0, 0);
+    }
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.heatCanvas, 0, 0, W, W);
+  }
+
+  draw(rover: { x: number; z: number; heading: number }, path: PathPoint[], goal: PathPoint | null, heat?: { cells: Float32Array; n: number; key: string }): void {
     const { ctx, canvas } = this;
     const W = canvas.width;
     const half = this.world.hm.sizeMetres / 2;
@@ -84,6 +109,7 @@ export class MiniMap {
     t.imageSmoothingEnabled = true;
     t.drawImage(this.mask, 0, 0, W, W);
     ctx.drawImage(this.tmp, 0, 0);
+    if (this.showHeat && heat) this.drawHeat(ctx, W, heat.cells, heat.n, heat.key);
 
     if (path.length > 0) {
       ctx.strokeStyle = '#5cc8ff';

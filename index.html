@@ -32,6 +32,7 @@
           <label title="Local time of day">☀ <input id="timeSlider" type="range" min="0" max="24" step="0.05" value="8" /></label>
           <label title="Dust opacity (tau)">τ <input id="tauSlider" type="range" min="0.2" max="4" step="0.05" value="0.6" /></label>
         </div>
+        <button id="habBtn" title="Habitability assessment (H)">Habitability</button>
         <button id="percBtn" title="Perception statistics (P)">Perception</button>
         <div class="chip env-readout"><span id="sunChip">sun —</span><i></i><span id="tauChip">τ —</span></div>
       </header>
@@ -86,20 +87,33 @@
             <div id="eyeInfo" class="dim small">no image yet</div>
           </section>
           <section class="card" id="mapCard">
-            <header class="card-h"><h3>Map</h3><span class="dim small" id="mapScale">2 km</span></header>
+            <header class="card-h"><h3>Map</h3><button id="togHeat" class="tog on" title="Habitability heatmap from what the rover has detected">Heatmap</button><span class="dim small" id="mapScale">2 km</span></header>
             <canvas id="mapCanvas" width="480" height="480"></canvas>
-            <div class="legend small dim"><span><i style="background:#ff8a3d"></i>rover</span><span><i style="background:#5cc8ff"></i>path</span><span><i style="background:#ffffff55"></i>explored</span></div>
+            <div class="legend small dim"><span><i style="background:#ff8a3d"></i>rover</span><span><i style="background:#5cc8ff"></i>path</span><span><i style="background:#ffffff55"></i>explored</span><span class="heatkey" title="low → high habitability evidence"></span></div>
           </section>
         </aside>
 
+        <div id="dock">
+        <section class="card" id="habCard" hidden>
+          <header class="card-h"><h3>Habitability · what the rover has found</h3><span class="score-pill"><b id="habScore">0</b><small>/100</small></span></header>
+          <div id="habHead" class="hab-head">No assessment yet</div>
+          <p id="habSummary" class="dim small"></p>
+          <div id="habNeg" class="negs"></div>
+          <div class="sub">Findings and why they matter</div>
+          <div id="habFindings"></div>
+          <div class="sub">Evidence log</div>
+          <ol id="habLog"></ol>
+          <p id="habCaveat" class="caveat"></p>
+        </section>
         <section class="card" id="percCard" hidden>
           <header class="card-h"><h3>Perception · detector vs ground truth</h3><span class="dim small" id="percNote"></span></header>
           <div class="perc-head"><span>class</span><span>precision</span><span>recall</span><span>correct</span><span>found</span></div>
           <div id="percRows"></div>
           <div class="perc-foot"><span id="percFoot" class="dim small"></span><span class="dim small">confidence → accuracy</span><div id="percStrip"></div></div>
         </section>
+        </div>
 
-        <footer id="hints" class="dim small">Space pause · 1–5 speed · O / F camera · C capture · P perception · drag to orbit, scroll to zoom</footer>
+        <footer id="hints" class="dim small">Space pause · 1–5 speed · O / F camera · C capture · P perception · H habitability · drag to orbit, scroll to zoom</footer>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

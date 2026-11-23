@@ -14,7 +14,8 @@ import { EyePanel } from './ui/eyePanel';
 import { MastCamera } from './perception/mastCamera';
 import { IdSpace, rockIdMaterial, terrainIdMaterial } from './perception/idPass';
 import { Detector } from './perception/detector';
-import { loadDetectorModel } from './perception/modelLoader';
+import { loadDetectorModel, loadReliability } from './perception/modelLoader';
+import { HabitabilityPanel } from './ui/habitabilityPanel';
 import { Metrics, scoreFrame } from './perception/scoring';
 import { PerceptionPanel } from './ui/perceptionPanel';
 import { installLab } from './perception/lab';
@@ -32,7 +33,7 @@ async function main() {
   renderer.shadowMap.autoUpdate = false; // refreshed when the sun moves and a few times a second for the rover shadow
   view.prepend(renderer.domElement);
 
-  const [world, model] = await Promise.all([loadWorld(), loadDetectorModel()]);
+  const [world, model, reliability] = await Promise.all([loadWorld(), loadDetectorModel(), loadReliability()]);
   const hm = world.hm;
   const sim = new Simulation(world);
   const half = hm.sizeMetres / 2;
@@ -61,6 +62,9 @@ async function main() {
   const metrics = new Metrics();
   const percPanel = new PerceptionPanel(metrics, model !== null);
   sim.agent.setDetector(new Detector(model));
+  sim.agent.setReliability(reliability);
+  const habPanel = new HabitabilityPanel(sim.agent.habitability, () => ({ tau: sim.tau, hours: sim.clock.localHours }));
+  const heatBtn = $('togHeat');
   installLab({ renderer, scene, env, mastCam, sim });
   const eye = new EyePanel($('eyeCanvas') as HTMLCanvasElement, $('eyeInfo'), document.querySelector('#eyeCard .tabs') as HTMLElement);
   const hud = new Hud(sim);
@@ -98,6 +102,11 @@ async function main() {
     renderer.setScissorTest(false);
     renderer.setViewport(0, 0, c.width, c.height);
   }
+
+  heatBtn.addEventListener('click', () => {
+    minimap.showHeat = !minimap.showHeat;
+    heatBtn.classList.toggle('on', minimap.showHeat);
+  });
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
@@ -174,6 +183,8 @@ async function main() {
   let mapT = 0;
   let shadowT = 0;
   let pathVer = '';
+  let lastHeatKey = '';
+  let heatCells: Float32Array = new Float32Array(0);
   renderer.setAnimationLoop((now) => {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
@@ -213,7 +224,14 @@ async function main() {
     mapT += dt;
     if (mapT > 0.4) {
       mapT = 0;
-      minimap.draw(sim.rover, sim.rover.remaining, sim.agent.goal);
+      const hab = sim.agent.habitability;
+      const heatKey = `${hab.version}:${sim.clock.localHours.toFixed(1)}:${sim.tau.toFixed(2)}`;
+      if (heatKey !== lastHeatKey) {
+        lastHeatKey = heatKey;
+        heatCells = hab.heat(sim.tau, sim.clock.localHours);
+      }
+      minimap.draw(sim.rover, sim.rover.remaining, sim.agent.goal, { cells: heatCells, n: hab.n, key: heatKey });
+      habPanel.update();
     }
     renderer.render(scene, camera);
     chasePass(dt);

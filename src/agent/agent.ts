@@ -7,6 +7,7 @@ import type { Rover } from '../sim/rover';
 import type { Detection, DetectionResult, Detector } from '../perception/detector';
 import type { AgentFrame, CaptureRequest } from '../perception/types';
 import type { Rock } from '../world/rocks';
+import { HabitabilityMap, type Reliability, type VerdictLevel } from '../habitability/model';
 import { KnownMap } from './knownMap';
 import type { Decision, Observation, Planner } from './planner';
 import { WORK_SUN_DEG } from './utilityPlanner';
@@ -57,6 +58,10 @@ export class Agent {
   lastResult: DetectionResult | null = null;
   readonly memory: (Detection & { t: number; sol: number })[] = [];
   detector: Detector | null = null;
+  /** The agent's belief about habitability, built only from its own detections. */
+  readonly habitability: HabitabilityMap;
+  private lastLevel: VerdictLevel = 'none';
+  private loggedClasses = new Set<number>();
 
   constructor(
     private rover: Rover,
@@ -69,6 +74,7 @@ export class Agent {
     public tau: number,
   ) {
     this.known = new KnownMap(grid);
+    this.habitability = new HabitabilityMap(grid.half, 64, (x, z) => grid.hm.slopeAt(x, z));
     for (const r of rocks) {
       const key = bucketKey(r.x, r.z);
       const list = this.rockBuckets.get(key);
@@ -90,6 +96,10 @@ export class Agent {
     this.lastFrame = f;
     this.framesTaken++;
     this.detect(f);
+  }
+
+  setReliability(r: Reliability): void {
+    this.habitability.setReliability(r);
   }
 
   setDetector(d: Detector | null): void {
@@ -175,6 +185,22 @@ export class Agent {
     }
   }
 
+  /** Assess step: fold detections into the habitability belief and report notable changes. */
+  private assess(dets: Detection[]): void {
+    for (const d of dets) {
+      this.habitability.add(d, this.clock.sol, this.clock.t);
+      if (d.confidence >= 0.3 && d.kind === 'terrain' && !this.loggedClasses.has(d.cls) && this.habitability.log.some((l) => l.cls === d.cls)) {
+        this.loggedClasses.add(d.cls);
+        this.say('assess', `first notable ${d.name} (${(d.confidence * 100).toFixed(0)}% confidence) near (${d.world.x.toFixed(0)}, ${d.world.z.toFixed(0)})`);
+      }
+    }
+    const v = this.habitability.verdict(this.tau, this.clock.localHours);
+    if (v.level !== this.lastLevel) {
+      this.lastLevel = v.level;
+      this.say('assess', `habitability assessment now: ${v.headline.toLowerCase()}`);
+    }
+  }
+
   /** The mast-camera detector runs on each received frame: only the image and depth go in. */
   private detect(frame: AgentFrame): void {
     if (!this.detector) return;
@@ -183,6 +209,7 @@ export class Agent {
     for (const d of res.detections) this.memory.push({ ...d, tiles: undefined, t: this.clock.t, sol: this.clock.sol });
     if (this.memory.length > 800) this.memory.splice(0, this.memory.length - 800);
     const top = [...res.detections].sort((a, b) => b.confidence - a.confidence).slice(0, 3).map((d) => `${d.name} ${(d.confidence * 100).toFixed(0)}%`);
+    this.assess(res.detections);
     this.say('detect', `${res.detections.length} detections in ${res.ms.toFixed(0)} ms${top.length ? ': ' + top.join(', ') : ''}`);
   }
 
@@ -200,6 +227,7 @@ export class Agent {
       tau: this.tau,
       pose: { x: this.rover.x, z: this.rover.z },
       known: this.known,
+      habitability: this.habitability,
       grid: this.grid,
       energy: this.energy,
     };

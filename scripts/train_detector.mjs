@@ -120,5 +120,7 @@ console.log('\nreliability (confidence bin: accuracy, n)');
 agg.bins.forEach((b, i) => console.log(`${i * 10}-${i * 10 + 10}%`.padEnd(8), b.n ? `${(b.tp / b.n * 100).toFixed(0)}% correct, mean conf ${(b.sumConf / b.n * 100).toFixed(0)}%, n=${b.n}` : '—'));
 console.log(`\nmean detector time ${(agg.msTotal / agg.frames).toFixed(1)} ms/frame over ${agg.frames} frames, ${agg.detections} detections`);
 mkdirSync('docs', { recursive: true });
-writeFileSync('docs/perception_eval.json', JSON.stringify({ when: new Date().toISOString(), frames: agg.frames, detections: agg.detections, meanDetectorMs: agg.msTotal / agg.frames, classes: rows, reliability: agg.bins, model: { temperature: model.temperature, ...model.info } }, null, 2));
+const evalJson = JSON.stringify({ when: new Date().toISOString(), frames: agg.frames, detections: agg.detections, meanDetectorMs: agg.msTotal / agg.frames, classes: rows, reliability: agg.bins, model: { temperature: model.temperature, ...model.info } }, null, 2);
+writeFileSync('docs/perception_eval.json', evalJson);
+writeFileSync('public/data/perception_eval.json', evalJson);
 await browser.close();

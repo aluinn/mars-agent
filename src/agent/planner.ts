@@ -1,6 +1,7 @@
 import type { NavGrid } from '../nav/navgrid';
 import type { PathPoint, PathResult } from '../nav/astar';
 import type { EnergyParams } from '../sim/energy';
+import type { HabitabilityMap } from '../habitability/model';
 import type { KnownMap } from './knownMap';
 
 /** Everything a planner may look at. Deliberately excludes world ground truth. */
@@ -18,6 +19,8 @@ export interface Observation {
   tau: number;
   pose: PathPoint;
   known: KnownMap;
+  /** What the agent believes about habitability so far (from its own detections). */
+  habitability: HabitabilityMap;
   grid: NavGrid;
   energy: EnergyParams;
 }
