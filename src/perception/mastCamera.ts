@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { acesToSrgb } from '../render/tone';
 import { mulberry32 } from '../world/rng';
 import { type AgentFrame, type CaptureRequest, type FrameMeta, MASTCAM, type TruthFrame, type TruthObject } from './types';
 
@@ -44,15 +45,14 @@ export class MastCamera {
   readonly camera: THREE.PerspectiveCamera;
   private rtColor: THREE.WebGLRenderTarget;
   private rtData: THREE.WebGLRenderTarget;
-  private bufC = new Uint8Array(MASTCAM.width * MASTCAM.height * 4);
+  private bufC = new Float32Array(MASTCAM.width * MASTCAM.height * 4);
   private bufD = new Uint8Array(MASTCAM.width * MASTCAM.height * 4);
   private bufI = new Uint8Array(MASTCAM.width * MASTCAM.height * 4);
 
   constructor(private lookup: (id: number) => TruthObject | undefined) {
     this.camera = new THREE.PerspectiveCamera(MASTCAM.fovYDeg, MASTCAM.width / MASTCAM.height, MASTCAM.near, MASTCAM.far);
-    // Colour pass: sRGB-encoded 8-bit like a real camera image, 4x MSAA for realistic edges.
-    this.rtColor = new THREE.WebGLRenderTarget(MASTCAM.width, MASTCAM.height, { samples: 4, depthBuffer: true });
-    this.rtColor.texture.colorSpace = THREE.SRGBColorSpace;
+    // Colour pass: linear HDR (float) with 4x MSAA; tone mapped to 8-bit sRGB on the CPU with the same curve as the display.
+    this.rtColor = new THREE.WebGLRenderTarget(MASTCAM.width, MASTCAM.height, { samples: 4, depthBuffer: true, type: THREE.FloatType });
     // Data passes (depth, ids): raw bytes, no antialiasing (blended ids would be invalid).
     this.rtData = new THREE.WebGLRenderTarget(MASTCAM.width, MASTCAM.height, { depthBuffer: true, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
   }
@@ -81,6 +81,7 @@ export class MastCamera {
     const prevFog = scene.fog;
     const prevOverride = scene.overrideMaterial;
     const hidden: THREE.Object3D[] = [];
+    const colourOnly: THREE.Object3D[] = [];
     const swapped: [THREE.Mesh, THREE.Material | THREE.Material[]][] = [];
     scene.traverse((o) => {
       if (o.userData.overlay && o.visible) {
@@ -89,13 +90,18 @@ export class MastCamera {
       }
     });
 
+    scene.traverse((o) => {
+      if (o.userData.colorOnly && o.visible) colourOnly.push(o);
+    });
+
     try {
       // 1. Colour pass: the scene exactly as lit (sun, dust, haze).
       renderer.setRenderTarget(this.rtColor);
       renderer.render(scene, this.camera);
       renderer.readRenderTargetPixels(this.rtColor, 0, 0, w, h, this.bufC);
 
-      // 2. Depth pass.
+      // 2. Depth pass (the sky dome is colour-only).
+      for (const o of colourOnly) o.visible = false;
       scene.background = null;
       scene.fog = null;
       scene.overrideMaterial = DEPTH_MATERIAL;
@@ -123,6 +129,7 @@ export class MastCamera {
     } finally {
       for (const [m, mat] of swapped) m.material = mat;
       for (const o of hidden) o.visible = true;
+      for (const o of colourOnly) o.visible = true;
       scene.background = prevBg;
       scene.fog = prevFog;
       scene.overrideMaterial = prevOverride;
@@ -152,6 +159,7 @@ export class MastCamera {
     const rgba = new Uint8ClampedArray(w * h * 4);
     const depth = new Float32Array(w * h);
     const ids = new Uint32Array(w * h);
+    const tmp = [0, 0, 0];
     const rnd = mulberry32(Math.floor(env.simTime) + 1);
     const gauss = () => Math.sqrt(-2 * Math.log(1 - rnd())) * Math.cos(2 * Math.PI * rnd());
     for (let y = 0; y < h; y++) {
@@ -160,9 +168,10 @@ export class MastCamera {
         const s = (src + x) * 4;
         const d = y * w + x;
         const n = gauss() * MASTCAM.noiseLevels;
-        rgba[d * 4] = this.bufC[s]! + n;
-        rgba[d * 4 + 1] = this.bufC[s + 1]! + n;
-        rgba[d * 4 + 2] = this.bufC[s + 2]! + n;
+        acesToSrgb(this.bufC[s]!, this.bufC[s + 1]!, this.bufC[s + 2]!, undefined, tmp);
+        rgba[d * 4] = tmp[0]! + n;
+        rgba[d * 4 + 1] = tmp[1]! + n;
+        rgba[d * 4 + 2] = tmp[2]! + n;
         rgba[d * 4 + 3] = 255;
         const v = (this.bufD[s]! * 65536 + this.bufD[s + 1]! * 256 + this.bufD[s + 2]!) / 16777215;
         depth[d] = v >= 0.99999 ? Infinity : v * MASTCAM.far;

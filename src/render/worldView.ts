@@ -4,24 +4,44 @@ import type { PathPoint } from '../nav/astar';
 import { CLASS_INFO } from '../world/classes';
 import type { Rock } from '../world/rocks';
 
+/** A lumpy rock shape: an icosphere with fixed noise displacement and a flattened underside. */
+function rockGeometry(): THREE.BufferGeometry {
+  const g = new THREE.IcosahedronGeometry(1, 1);
+  const p = g.getAttribute('position') as THREE.BufferAttribute;
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i);
+    const y = p.getY(i);
+    const z = p.getZ(i);
+    const n = Math.sin(x * 4.1 + y * 2.3) * Math.cos(z * 3.7 + x * 1.9) * 0.5 + Math.sin(y * 7.3 + z * 5.1) * 0.25;
+    const r = 1 + 0.2 * n;
+    p.setXYZ(i, x * r, y < 0 ? y * r * 0.35 : y * r, z * r);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+
 export function buildRocks(hm: Heightmap, rocks: Rock[]): THREE.InstancedMesh {
-  const mesh = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 0), new THREE.MeshLambertMaterial({ color: 0xffffff }), rocks.length);
-  const col = new THREE.Color();
+  const mesh = new THREE.InstancedMesh(rockGeometry(), new THREE.MeshLambertMaterial({ color: 0xffffff }), rocks.length);
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
   const e = new THREE.Euler();
+  const col = new THREE.Color();
   rocks.forEach((r, i) => {
-    e.set(r.id * 1.7, r.id * 2.3, r.id * 0.9);
+    e.set((r.id * 1.7) % 6.28, (r.id * 2.3) % 6.28, (r.id * 0.9) % 6.28);
     q.setFromEuler(e);
-    m.compose(new THREE.Vector3(r.x, hm.heightAt(r.x, r.z) + r.radius * 0.4, r.z), q, new THREE.Vector3(r.radius, r.radius * 0.7, r.radius));
+    const flat = 0.55 + ((r.id * 7919) % 100) / 100 * 0.5; // per-rock height/width ratio
+    m.compose(new THREE.Vector3(r.x, hm.heightAt(r.x, r.z) + r.radius * 0.25, r.z), q, new THREE.Vector3(r.radius, r.radius * flat, r.radius * (0.8 + ((r.id * 31) % 40) / 100)));
     mesh.setMatrixAt(i, m);
-    // Rock colour follows its (assumed) lithology, darkened so rocks read as rock against the ground.
+    // Colour follows the (assumed) lithology of the unit beneath, with per-rock brightness variation and a dusty tint.
     const a = CLASS_INFO[r.lithology]?.albedo ?? [90, 80, 70];
-    col.setRGB((a[0] * 0.7) / 255, (a[1] * 0.7) / 255, (a[2] * 0.7) / 255, THREE.SRGBColorSpace);
+    const k = (0.55 + (((r.id * 2654435761) >>> 0) % 100) / 250) / 255;
+    col.setRGB(a[0] * k + 0.04, a[1] * k + 0.03, a[2] * k + 0.02, THREE.SRGBColorSpace);
     mesh.setColorAt(i, col);
   });
   mesh.instanceMatrix.needsUpdate = true;
   if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
   mesh.name = 'rocks';
   return mesh;
 }

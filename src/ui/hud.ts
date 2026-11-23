@@ -1,34 +1,78 @@
 import type { Simulation } from '../sim/simulation';
 import { formatLocalTime } from '../sim/environment';
 
-/** Text readout of the rover's state. Updated a few times a second, not every frame. */
+const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+/** Status card + activity feed. Built once in the HTML; update() only touches text and styles. */
 export class Hud {
-  constructor(
-    private el: HTMLElement,
-    private sim: Simulation,
-  ) {}
+  private el = {
+    pill: $('modePill'),
+    pct: $('battPct'),
+    wh: $('battWh'),
+    bar: $('battBar'),
+    solar: $('stSolar'),
+    load: $('stLoad'),
+    speed: $('stSpeed'),
+    odo: $('stOdo'),
+    expl: $('stExpl'),
+    replan: $('stReplan'),
+    planner: $('plannerName'),
+    log: $('logList'),
+    logCount: $('logCount'),
+    sol: $('solChip'),
+    lmst: $('lmstChip'),
+    sun: $('sunChip'),
+    tau: $('tauChip'),
+  };
+  private logLen = -1;
+
+  constructor(private sim: Simulation) {
+    this.el.planner.textContent = `planner · ${sim.agent.plannerName}`;
+  }
 
   update(sunDeg: number): void {
-    const { sim } = this;
+    const { sim, el } = this;
     const a = sim.agent;
     const soc = sim.battery.soc;
-    const logs = a.log
-      .slice(-7)
-      .reverse()
-      .map((l) => `<div>sol ${l.sol} ${formatLocalTime(l.localHours)} [${l.stage}] ${escapeHtml(l.text)}</div>`)
-      .join('');
-    this.el.innerHTML = `
-      <h3>ROVER STATUS · planner ${escapeHtml(a.plannerName)}</h3>
-      <div class="row"><span>Sol ${sim.clock.sol} · ${formatLocalTime(sim.clock.localHours)} LMST</span><span class="mode">${a.mode.toUpperCase()}</span></div>
-      <div class="row"><span>Battery ${sim.battery.wh.toFixed(0)} Wh (${(soc * 100).toFixed(0)}%)</span><span>sun ${sunDeg.toFixed(1)}°</span></div>
-      <div class="bar"><i style="width:${(soc * 100).toFixed(1)}%"></i></div>
-      <div class="row"><span>Solar ${a.powerW.generated.toFixed(0)} W</span><span>Load ${a.powerW.consumed.toFixed(0)} W</span></div>
-      <div class="row"><span>Odometer ${sim.rover.odometerM.toFixed(0)} m</span><span>Speed ${sim.rover.speed.toFixed(3)} m/s</span></div>
-      <div class="row"><span>Explored ${(a.known.exploredFraction() * 100).toFixed(1)}%</span><span>Replans ${a.replans}</span></div>
-      <div class="log">${logs}</div>`;
+    el.pill.textContent = a.mode.toUpperCase();
+    el.pill.dataset.mode = a.mode;
+    el.pct.textContent = `${(soc * 100).toFixed(0)}%`;
+    el.wh.textContent = `${sim.battery.wh.toFixed(0)} / ${sim.battery.params.batteryCapacityWh} Wh`;
+    el.bar.style.width = `${(soc * 100).toFixed(1)}%`;
+    el.bar.style.background = soc > 0.5 ? 'var(--ok)' : soc > 0.28 ? 'var(--warn)' : 'var(--bad)';
+    el.solar.textContent = `${a.powerW.generated.toFixed(0)} W`;
+    el.load.textContent = `${a.powerW.consumed.toFixed(0)} W`;
+    el.speed.textContent = `${sim.rover.speed.toFixed(2)} m/s`;
+    el.odo.textContent = `${sim.rover.odometerM.toFixed(0)} m`;
+    el.expl.textContent = `${(a.known.exploredFraction() * 100).toFixed(1)}%`;
+    el.replan.textContent = String(a.replans);
+    el.sol.textContent = `Sol ${sim.clock.sol}`;
+    el.lmst.textContent = formatLocalTime(sim.clock.localHours);
+    el.sun.textContent = `sun ${sunDeg.toFixed(0)}°`;
+    el.tau.textContent = `τ ${sim.tau.toFixed(2)}`;
+    if (a.log.length !== this.logLen) {
+      this.logLen = a.log.length;
+      el.logCount.textContent = `${a.log.length} events`;
+      el.log.replaceChildren(
+        ...a.log
+          .slice(-7)
+          .reverse()
+          .map((l) => {
+            const li = document.createElement('li');
+            const chip = document.createElement('span');
+            chip.className = 'chip2';
+            chip.dataset.s = l.stage;
+            chip.textContent = l.stage;
+            const msg = document.createElement('span');
+            msg.className = 'msg';
+            msg.textContent = l.text;
+            const t = document.createElement('span');
+            t.className = 't';
+            t.textContent = `sol ${l.sol} · ${formatLocalTime(l.localHours)}`;
+            li.append(chip, msg, t);
+            return li;
+          }),
+      );
+    }
   }
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
 }

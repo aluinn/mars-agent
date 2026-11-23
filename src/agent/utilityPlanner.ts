@@ -28,8 +28,8 @@ export class UtilityPlanner implements Planner {
   private rnd = mulberry32(7);
   constructor(
     private weights: UtilityWeights = DEFAULT_WEIGHTS,
-    private minDriveM = 60,
-    private maxDriveM = 450,
+    private minDriveM = 50,
+    private maxDriveM = 320,
   ) {}
 
   decide(o: Observation): Decision {

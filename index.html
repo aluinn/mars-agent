@@ -3,37 +3,86 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07090c" />
     <title>Jezero Rover Agent</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <div id="app">
       <header id="topbar">
-        <strong>MARS ROVER AGENT</strong>
-        <span id="clock"></span>
-        <span class="spacer"></span>
-        <button id="playBtn">Pause</button>
-        <label>Speed <select id="speedSel"><option value="1">1×</option><option value="60">60×</option><option value="600" selected>600×</option><option value="3600">3600×</option><option value="14400">14400×</option></select></label>
-        <label>Camera <select id="camSel"><option value="orbit">Orbit</option><option value="follow">Follow</option></select></label>
-        <label>Local time <input id="timeSlider" type="range" min="0" max="24" step="0.05" value="8" /></label>
-        <label>Dust τ <input id="tauSlider" type="range" min="0.2" max="4" step="0.05" value="0.6" /></label>
-        <span id="envReadout"></span>
-      </header>
-      <div id="view">
-        <div id="hud" class="panel"></div>
-        <div id="eye" class="panel">
-          <div class="eyehead">
-            <strong>ROVER EYE</strong>
-            <span class="tabs">
-              <button data-view="rgb" class="on">Camera</button>
-              <button data-view="depth">Depth</button>
-              <button data-view="truth" title="Ground truth, for evaluation only">Truth</button>
-            </span>
-            <button id="snapBtn" title="Take an image now">Capture</button>
-          </div>
-          <canvas id="eyeCanvas" width="640" height="480"></canvas>
-          <div id="eyeInfo">no image yet</div>
+        <div class="brand">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 14.5c3-2.5 6-2.8 8.5-1.2s5.5 1.4 8.5-.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="16.5" cy="8" r="1.6" fill="currentColor"/></svg>
+          <div><strong>Jezero</strong><span>Rover Agent</span></div>
         </div>
+        <div class="chip clock" title="Mission sol and local mean solar time"><span id="solChip">Sol 1</span><i></i><span id="lmstChip">08:00</span><small>LMST</small></div>
+        <div class="group" role="group" aria-label="Transport">
+          <button id="playBtn" class="icon" title="Pause / play (Space)" aria-label="Pause">
+            <svg id="icoPause" viewBox="0 0 24 24" width="16" height="16"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
+            <svg id="icoPlay" viewBox="0 0 24 24" width="16" height="16" hidden><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg>
+          </button>
+          <div class="seg" id="speedSeg" role="group" aria-label="Time speed">
+            <button data-speed="1">1×</button><button data-speed="60">60×</button><button data-speed="600" class="on">600×</button><button data-speed="3600">3600×</button><button data-speed="14400">14400×</button>
+          </div>
+        </div>
+        <div class="seg" id="camSeg" role="group" aria-label="Camera">
+          <button data-cam="orbit" class="on" title="Orbit camera (O)">Orbit</button><button data-cam="follow" title="Follow rover (F)">Follow</button>
+        </div>
+        <span class="spacer"></span>
+        <div class="env">
+          <label title="Local time of day">☀ <input id="timeSlider" type="range" min="0" max="24" step="0.05" value="8" /></label>
+          <label title="Dust opacity (tau)">τ <input id="tauSlider" type="range" min="0.2" max="4" step="0.05" value="0.6" /></label>
+        </div>
+        <div class="chip env-readout"><span id="sunChip">sun —</span><i></i><span id="tauChip">τ —</span></div>
+      </header>
+
+      <div id="view">
+        <aside id="left">
+          <section class="card" id="statusCard">
+            <header class="card-h"><h3>Rover</h3><span id="modePill" class="pill">IDLE</span></header>
+            <div class="batt">
+              <div class="batt-top"><span id="battPct">—</span><span class="dim" id="battWh">— Wh</span></div>
+              <div class="bar"><i id="battBar"></i></div>
+            </div>
+            <dl class="stats">
+              <div><dt>Solar</dt><dd id="stSolar">—</dd></div>
+              <div><dt>Load</dt><dd id="stLoad">—</dd></div>
+              <div><dt>Speed</dt><dd id="stSpeed">—</dd></div>
+              <div><dt>Odometer</dt><dd id="stOdo">—</dd></div>
+              <div><dt>Explored</dt><dd id="stExpl">—</dd></div>
+              <div><dt>Replans</dt><dd id="stReplan">—</dd></div>
+            </dl>
+            <div class="planner" id="plannerName"></div>
+          </section>
+          <section class="card" id="logCard">
+            <header class="card-h"><h3>Activity</h3><span class="dim" id="logCount"></span></header>
+            <ol id="logList"></ol>
+          </section>
+        </aside>
+
+        <aside id="right">
+          <section class="card" id="eyeCard">
+            <header class="card-h">
+              <h3>Rover Eye</h3>
+              <span class="tabs seg small">
+                <button data-view="rgb" class="on">Camera</button>
+                <button data-view="depth">Depth</button>
+                <button data-view="truth" title="Ground truth, for evaluation only">Truth</button>
+              </span>
+              <button id="snapBtn" class="icon small" title="Capture an image now (C)" aria-label="Capture">
+                <svg viewBox="0 0 24 24" width="15" height="15"><path d="M9 4l-1.5 2H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-2.5L15 4zM12 9a3.5 3.5 0 110 7 3.5 3.5 0 010-7z" fill="currentColor"/></svg>
+              </button>
+            </header>
+            <div class="eye-frame"><canvas id="eyeCanvas" width="640" height="480"></canvas><div class="eye-empty" id="eyeEmpty">Waiting for the first image…</div></div>
+            <div id="eyeInfo" class="dim small">no image yet</div>
+          </section>
+          <section class="card" id="mapCard">
+            <header class="card-h"><h3>Map</h3><span class="dim small" id="mapScale">2 km</span></header>
+            <canvas id="mapCanvas" width="480" height="480"></canvas>
+            <div class="legend small dim"><span><i style="background:#ff8a3d"></i>rover</span><span><i style="background:#5cc8ff"></i>path</span><span><i style="background:#ffffff55"></i>explored</span></div>
+          </section>
+        </aside>
+
+        <footer id="hints" class="dim small">Space pause · 1–5 speed · O / F camera · C capture · drag to orbit, scroll to zoom</footer>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

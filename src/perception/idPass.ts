@@ -47,7 +47,12 @@ export function terrainIdMaterial(geo: Geology): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms: { idTex: { value: buildTerrainIdTexture(geo) } },
     vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'precision highp float; uniform sampler2D idTex; varying vec2 vUv; void main() { gl_FragColor = vec4(texture2D(idTex, vUv).rgb, 1.0); }',
+    // Outside the real data patch (mirrored filler terrain) there is no ground truth: id 0 = unknown, excluded from scoring.
+    fragmentShader: `precision highp float; uniform sampler2D idTex; varying vec2 vUv;
+      void main() {
+        bool inside = vUv.x >= 0.0 && vUv.x <= 1.0 && vUv.y >= 0.0 && vUv.y <= 1.0;
+        gl_FragColor = vec4(inside ? texture2D(idTex, vUv).rgb : vec3(0.0), 1.0);
+      }`,
     blending: THREE.NoBlending,
     fog: false,
   });

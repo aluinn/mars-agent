@@ -37,10 +37,10 @@ export class Simulation {
     this.clock = new SimClock(startLocalHours);
     this.grid = world.grid;
     this.rocks = world.rocks;
+    // The landing site lies outside this 2 km patch, so start at the gentlest ground nearest to it inside the patch.
     const p = latLonToWorld(hm.meta, LANDING.lat, LANDING.lon);
-    // Keep the start inside the patch (the landing site is near its south-east corner).
-    const lim = hm.sizeMetres / 2 - 150;
-    this.rover = new Rover(hm, Math.min(lim, Math.max(-lim, p.x - 150)), Math.min(lim, Math.max(-lim, p.z - 150)));
+    const start = findStart(this.grid, p.x, p.z);
+    this.rover = new Rover(hm, start.x, start.z);
     this.battery = new Battery(energy);
     this.agent = new Agent(this.rover, this.battery, this.clock, this.grid, this.rocks, planner, energy, this.tau);
   }
@@ -57,4 +57,24 @@ export class Simulation {
       remaining -= dt;
     }
   }
+}
+
+/** Nearest point to (px, pz) within the patch margin whose neighbourhood is gentle (slope < 6 deg over 40 m). */
+function findStart(grid: NavGrid, px: number, pz: number): { x: number; z: number } {
+  const lim = grid.half - 120;
+  const tx = Math.min(lim, Math.max(-lim, px));
+  const tz = Math.min(lim, Math.max(-lim, pz));
+  let best = { x: tx, z: tz, score: Infinity };
+  for (let dz = -300; dz <= 300; dz += 20) {
+    for (let dx = -300; dx <= 300; dx += 20) {
+      const x = tx + dx;
+      const z = tz + dz;
+      if (Math.abs(x) > lim || Math.abs(z) > lim) continue;
+      let worst = 0;
+      for (let k = 0; k < 9; k++) worst = Math.max(worst, grid.hm.slopeAt(x + ((k % 3) - 1) * 20, z + (Math.floor(k / 3) - 1) * 20));
+      const score = worst > 6 ? 1000 + worst : Math.hypot(dx, dz);
+      if (score < best.score) best = { x, z, score };
+    }
+  }
+  return best;
 }

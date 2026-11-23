@@ -35,6 +35,7 @@ export class EyePanel {
   setFrames(a: AgentFrame, t: TruthFrame): void {
     this.agentFrame = a;
     this.truth = t;
+    document.getElementById('eyeEmpty')?.setAttribute('hidden', '');
     this.draw();
   }
 
