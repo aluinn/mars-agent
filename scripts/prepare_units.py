@@ -6,6 +6,7 @@ Needs: numpy, rasterio, shapely, fiona, pillow (dev-time only).
 
 Output: public/data/jezero_units.png   R = bedrock unit id, G = surface unit id (0 = none)
         public/data/jezero_units.json  legends + provenance
+Needs jezero_height_rg.json from prepare_hirise.py (window origin and size).
 Source: Stack et al. 2020, Space Science Reviews, https://doi.org/10.1007/s11214-020-00739-x
         (supplementary shapefile; Mars 2000 sphere, equidistant cylindrical, std parallel 0).
 """
@@ -19,10 +20,8 @@ from shapely.geometry import shape
 src, outdir = sys.argv[1], sys.argv[2]
 meta = json.load(open(f"{outdir}/jezero_height_rg.json"))
 OUT = meta["outputSize"]
-cs = meta["sizeMetres"] / OUT
-k = math.cos(math.radians(18.4663))  # DEM CRS has std parallel 18.4663; the shapefile CRS has std parallel 0
-# pixel (col,row) -> shapefile CRS (x = R*lon, y = R*lat). DEM x = shapefile x * k.
-tf = Affine(cs / k, 0, meta["windowLeftM"] / k, 0, -cs, meta["windowTopM"])
+# The shapefile and the HiRISE DTM share one CRS (equirectangular, standard parallel 0), so pixel -> CRS is a plain affine.
+tf = Affine(meta["windowCrsWidth"] / OUT, 0, meta["crsOriginX"], 0, -meta["windowCrsHeight"] / OUT, meta["crsOriginY"])
 
 bed_names, surf_names = [], []
 def uid(names, v):

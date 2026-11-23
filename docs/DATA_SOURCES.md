@@ -1,36 +1,35 @@
 # Data sources
 
-## Terrain: Mars 2020 Science Investigation CTX DEM Mosaic (real data)
+## Terrain: HiRISE DTM (real data, 1 m posting)
 
 | Field | Value |
 | --- | --- |
-| Product | Mars 2020 Science Investigation CTX DEM Mosaic, `M20_JezeroCrater_CTXDEM_20m.tif` |
-| Publisher | USGS Astrogeology Science Center (built from MRO CTX stereo, Ames Stereo Pipeline, JPL/USGS) |
-| Product page | https://astrogeology.usgs.gov/search/map/mars_2020_science_investigation_ctx_dem_mosaic |
-| Download | https://planetarymaps.usgs.gov/mosaic/mars2020_trn/CTX/ScienceInvestigationMaps_JPL/M20_JezeroCrater_CTXDEM_20m.tif |
-| DOI | https://doi.org/10.5066/P906QQT8 |
-| Native resolution | 20 m/pixel, 4456 x 5067 px, 32-bit float, metres |
-| Projection | Equirectangular, Mars 2000 sphere (R = 3,396,190 m), standard parallel 18.4663 N |
-| Control | MOLA control net (horizontal accuracy "accurate to control net" per the product metadata) |
-| Licence | Public domain (USGS use constraint: "public domain", "please cite authors") |
-| SHA-256 of the file we used | `ba7f706ea1b5d63a562f28a7dcf7a7f3c79bce7f048e6974b57e8a33c30d1ba2` (90,345,300 bytes) |
-
-The raw GeoTIFF is **not** committed (90 MB). Fetch it from the URL above.
+| Product | Mars 2020 Terrain Relative Navigation HiRISE DTM mosaic, `JEZ_hirise_soc_006_DTM_MOLAtopography_DeltaGeoid_1m_Eqc_latTs0_lon0_blend40.tif` |
+| Publisher | USGS Astrogeology Science Center with JPL (built from MRO HiRISE stereo pairs, tied to MOLA topography) |
+| Download | https://planetarymaps.usgs.gov/mosaic/mars2020_trn/HiRISE/JEZ_hirise_soc_006_DTM_MOLAtopography_DeltaGeoid_1m_Eqc_latTs0_lon0_blend40.tif (1.84 GB; we read only our window over HTTP range requests, about 170 MB) |
+| Also the base of | Stack et al. (2020), whose README names this exact file as the DTM used for the geologic map |
+| Data release DOI | https://doi.org/10.5066/P9REJ9JN is the DOI USGS lists for the Mars 2020 TRN HiRISE DTM mosaic. We did not verify that the `soc_006` file is that exact release version |
+| Native resolution | 1 m/pixel, 21,400 x 21,488 px, float32, metres |
+| Projection | Equirectangular, Mars 2000 sphere (R = 3,396,190 m), **standard parallel 0**. East-west pixels therefore cover cos(lat) = 0.9486 m of ground; we resample to a uniform ground grid |
+| Licence | **Not verified.** The USGS pages did not expose usage terms to automated requests. USGS Astrogeology products are generally US-Government works, but check before redistributing the raw file. We commit only our derived 1024 x 1024 crop |
 
 ### Our crop
 
-- Window: columns 1049-1298, rows 2310-2559 of the native raster (250 x 250 px = 5 km x 5 km).
-- Geographic extent: about 18.426-18.511 N, 77.371-77.460 E. It includes the Jezero delta front scarp, the crater floor edge, and the Perseverance landing site (18.4446 N, 77.4509 E, near the south-east corner).
-- Elevation range in the crop: -2588.9 m to -2396.6 m (192 m of relief). Slopes at 4.9 m/px: mean 4.4 deg, 95th percentile 13.3 deg, 99th percentile 21.6 deg, max 37.3 deg.
-- Output: `public/data/jezero_height_rg.png` (1024 x 1024, 16-bit height packed into the R and G bytes because browsers decode 16-bit PNGs down to 8 bits) plus `jezero_height_rg.json` (min/max elevation, extent, provenance).
-- Regenerate with `scripts/prepare_dem.py` (needs Python with numpy, rasterio and pillow; dev-time only).
+- Centre 18.4568 N, 77.4240 E, 2 km x 2 km (2108 x 2000 source pixels), area-averaged to 1024 x 1024 at 1.953 m/px of ground.
+- It contains the south-eastern lobe of the Jezero delta (a scarp up to 70 degrees steep), the crater-floor edge with megaripples, an isolated delta butte and several craters. The Perseverance landing site (18.4446 N, 77.4509 E) is about 2.1 km south-east of the patch.
+- Elevation range -2574.7 m to -2460.3 m (114 m of relief). Slope on the 1.95 m grid: mean 5.2 deg, 95th percentile 17.8 deg, 99th percentile 28.9 deg.
+- Output: `public/data/jezero_height_rg.png` (16-bit height packed into the R and G bytes because browsers decode 16-bit PNG to 8 bits) and `jezero_height_rg.json` (extent, CRS origin, provenance).
+- Regenerate with `scripts/prepare_hirise.py` (needs numpy, rasterio and pillow; dev-time only).
+
+### Terrain outside the patch
+
+The renderer surrounds the real patch with 8 **mirrored** copies of it so the horizon has no edge. This is visual filler only: it carries no ground truth (the hidden ID pass reports "unknown" there), the rover never goes there, and it is never scored.
 
 ### Honest limits
 
-- The source is 20 m/px. The 1024 x 1024 heightmap (4.88 m/px) is a **bicubic upsample** of 250 x 250 real samples, so it is smooth. Features smaller than about 40 m (rocks, ripples, small craters) are **not** in the elevation data.
-- Rocks, cobbles, ripples and other small objects in the simulation are synthetic scene objects placed on top of the real terrain. They are not mapped from imagery.
-- Terrain colour is a plain regolith tint by elevation. We do not use the CTX orthomosaic.
-- A higher-resolution alternative exists (HiRISE DTM mosaic, Bland et al. 2024, https://doi.org/10.5066/P13CPYYU, 5.4 GB zip). It was not used.
+- The heightmap is a 1.95 m grid area-averaged from 1 m data. Features smaller than a few metres (individual rocks, ripple crests) are not in the elevation data.
+- Rocks, cobbles and other small objects in the simulation are synthetic scene objects placed on top of the real terrain. They are not mapped from imagery.
+- The fine-scale "grain" in the terrain shader (value noise, fading out beyond about 250 m) is cosmetic detail, not elevation data.
 
 ## Geology: Stack et al. (2020) photogeologic map (real polygons, assumed minerals)
 
@@ -43,11 +42,11 @@ The raw GeoTIFF is **not** committed (90 MB). Fetch it from the URL above.
 | Projection | Mars 2000 sphere, equidistant cylindrical, standard parallel 0 |
 | Licence | Not stated in the supplement; it accompanies a journal article. Cite the authors. Check the publisher's terms before redistributing the raw shapefile (we commit only our rasterisation). |
 
-`scripts/prepare_units.py` rasterises the polygons onto the same 1024 x 1024 grid as the heightmap into `public/data/jezero_units.png` (R = bedrock unit id, G = surface unit id) with the legend in `jezero_units.json`. 1,048,539 of 1,048,576 pixels (99.996%) fall inside mapped polygons.
+`scripts/prepare_units.py` rasterises the polygons onto the same 1024 x 1024 grid as the heightmap (the shapefile and the DTM share one CRS) into `public/data/jezero_units.png` (R = bedrock unit id, G = surface unit id) with the legend in `jezero_units.json`. 1,048,558 of 1,048,576 pixels (99.998%) fall inside mapped polygons.
 
 We checked the registration against the DEM: the delta polygons sit on the high ground (mean -2455 m for "Delta blocky") and the crater-floor polygons on the low ground (mean -2557 m for "Crater floor fractured 1"), and the delta polygon edge follows the real scarp.
 
-Units present in the 5 km patch (pixels of 1,048,576): bedrock "Delta blocky" 303k, "Crater floor fractured rough" 305k, "Crater floor fractured 1" 153k, "Delta truncated curvilinear layered" 136k, "Crater floor fractured 2" 108k, "Delta thinly layered" 36k, "Delta thickly layered" 6k, "Margin fractured" 648. Surface: "Undifferentiated smooth" 295k, "Aeolian bedforms, large" 251k, "Minor Cover Us" 68k, "Talus" 32k, "Moderate Cover Us" 27k, "Aeolian bedforms, small" 9k, none 366k.
+Units present in the 2 km patch (pixels of 1,048,576): bedrock "Crater floor fractured rough" 454k, "Crater floor fractured 1" 303k, "Delta blocky" 190k, "Delta truncated curvilinear layered" 77k, "Delta thinly layered" 20k, "Crater floor fractured 2" 5k. Surface: "Undifferentiated smooth" 370k, "Aeolian bedforms, large" 325k, none 216k, "Moderate Cover Us" 67k, "Talus" 50k, "Minor Cover Us" 12k, "Aeolian bedforms, small" 8k. No "Margin fractured" or crater-rim unit falls inside this patch, so **carbonate-bearing rock does not occur here at all**.
 
 ### How map units become detection classes (`src/world/classes.ts`)
 
@@ -56,8 +55,8 @@ Priority per pixel: steep slope (> 25 deg, from the DEM) > crater (DEM) > possib
 | Class | Source | Status |
 | --- | --- | --- |
 | hazard: steep slope | DEM slope > 25 deg | real (derived from the DEM) |
-| crater | closed depression at least 5 m deep and about 3.8 ha, from priority-flood fill of the DEM | real (derived; at 20 m posting only large craters survive, one in this patch) |
-| possible dried channel | D8 flow accumulation on the filled DEM >= 350 cells, slope < 12 deg | **speculative**: present-day drainage lines, NOT mapped palaeochannels. Neretva Vallis is not inside the patch |
+| crater | closed depression at least 2 m deep and 1,500 m2, from priority-flood fill of the DEM | real (derived from the 1 m DTM) |
+| possible dried channel | D8 catchment area on the filled DEM >= 130,000 m2, slope < 12 deg | **speculative**: present-day drainage lines, NOT mapped palaeochannels. Neretva Vallis is not inside the patch |
 | hazard: loose sand | surface unit "Aeolian bedforms, large" | real unit, interpretation as hazard is ours |
 | sand ripples/dunes | surface unit "Aeolian bedforms, small" | real unit |
 | regolith | surface units "Undifferentiated smooth", "Moderate Cover Us", "Talus" | real units, merged |
@@ -71,8 +70,8 @@ Priority per pixel: steep slope (> 25 deg, from the DEM) > crater (DEM) > possib
 
 ### What is synthetic
 
-- Rock positions and sizes (4,000 rocks, seeded). Density rises with slope and in talus and falls on sand. Rock colour follows the class of the bedrock unit beneath it.
-- The terrain texture: each class has a typical colour (`CLASS_INFO`), with +-6% per-texel variation and elevation-contour banding on delta units. It is not an orbital image.
+- Rock positions and sizes (8,000 rocks, seeded). Density rises with slope and in talus and falls on sand. Rock colour follows the class of the bedrock unit beneath it.
+- The class tints: each class has a typical colour (`CLASS_INFO`), blended 55% toward regolith over the real orthoimage luminance. The luminance is real; the colour is synthetic (the orthoimage is greyscale).
 - The camera noise (Gaussian, 2.5 grey levels).
 
 ## Mars constants

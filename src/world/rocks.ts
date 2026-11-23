@@ -26,7 +26,7 @@ export const rockClass = (r: Rock): ClassId => (r.kind === 'boulder' ? C.Boulder
  * Scatter rocks with an exponential size distribution. Denser on steeper ground and in talus, sparser on sand.
  * Size-frequency shape is qualitatively like Mars landing-site rock populations, not fitted to Jezero counts.
  */
-export function generateRocks(hm: Heightmap, geo: Geology, seed = 2020, count = 4000): Rock[] {
+export function generateRocks(hm: Heightmap, geo: Geology, seed = 2020, count = 8000): Rock[] {
   const rnd = mulberry32(seed);
   const half = hm.sizeMetres / 2;
   const rocks: Rock[] = [];
@@ -38,7 +38,7 @@ export function generateRocks(hm: Heightmap, geo: Geology, seed = 2020, count = 
     if (slope > 32) continue;
     const dens = ROCK_DENSITY[geo.surfaceNameAt(x, z)] ?? 1;
     if (rnd() * 3 > (0.25 + slope / 25) * dens) continue;
-    const radius = 0.08 + -Math.log(1 - rnd() * 0.97) * 0.35;
+    const radius = 0.05 + -Math.log(1 - rnd() * 0.97) * 0.28;
     rocks.push({ id: rocks.length, x, z, radius, kind: radius >= OBSTACLE_RADIUS ? 'boulder' : 'cobble', lithology: geo.bedrockClassAt(x, z) as ClassId });
   }
   return rocks;

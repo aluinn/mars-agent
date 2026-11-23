@@ -1,0 +1,8 @@
+{
+  "source": "JEZ_hirise_soc_006_orthoMosaic_25cm_Eqc_latTs0_lon0_first.tif",
+  "size": 4096,
+  "nativeMetresPerPixel": 0.25,
+  "metresPerPixel": 0.48828125,
+  "band": "HiRISE red, 8-bit greyscale",
+  "note": "area-averaged from 0.25 m"
+}

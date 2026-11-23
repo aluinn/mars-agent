@@ -28,6 +28,11 @@ export interface Geology {
 }
 
 export const STEEP_HAZARD_DEG = 25;
+/** Crater: closed depression at least this deep and this large (physical units, independent of DEM resolution). */
+export const CRATER_MIN_DEPTH_M = 2;
+export const CRATER_MIN_AREA_M2 = 1500;
+/** Possible channel: D8 catchment area at least this large, on gentle ground. */
+export const CHANNEL_MIN_CATCHMENT_M2 = 130000;
 const D8: [number, number][] = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
 
 /** Priority-flood depression filling (Barnes et al. 2014 style) + D8 flow accumulation on an N x N grid. */
@@ -142,15 +147,16 @@ export function buildGeology(hm: Heightmap, slope: Float32Array, units: Uint8Cla
   }
   const { depth, acc } = drainage(coarse, N);
 
-  // Craters: closed depressions at least 5 m deep and 10 coarse cells (~3.8 ha) in area.
+  const cellM = hm.sizeMetres / N;
+  const cellArea = cellM * cellM;
   const dep = new Uint8Array(N * N);
-  for (let i = 0; i < N * N; i++) dep[i] = depth[i]! > 5 ? 1 : 0;
+  for (let i = 0; i < N * N; i++) dep[i] = depth[i]! > CRATER_MIN_DEPTH_M ? 1 : 0;
   const cc = components(dep, N);
   const craterC = new Uint8Array(N * N);
-  for (let i = 0; i < N * N; i++) if (cc.label[i] && cc.sizes[cc.label[i]!]! >= 10) craterC[i] = 1;
+  for (let i = 0; i < N * N; i++) if (cc.label[i] && cc.sizes[cc.label[i]!]! * cellArea >= CRATER_MIN_AREA_M2) craterC[i] = 1;
   // Channels: strong drainage lines on gentle ground (possible, not mapped palaeochannels).
   const chanC = new Uint8Array(N * N);
-  for (let i = 0; i < N * N; i++) if (acc[i]! >= 350 && !craterC[i]) chanC[i] = 1;
+  for (let i = 0; i < N * N; i++) if (acc[i]! * cellArea >= CHANNEL_MIN_CATCHMENT_M2 && !craterC[i]) chanC[i] = 1;
 
   const classMap = new Uint8Array(size * size);
   const bedrock = new Uint8Array(size * size);

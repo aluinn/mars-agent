@@ -28,23 +28,21 @@
     "Minor Cover Us"
   ],
   "pixelsBedrock": {
-    "Margin fractured": 648,
-    "Delta blocky": 303310,
-    "Crater floor fractured 2": 108447,
-    "Delta thinly layered": 35652,
-    "Crater floor fractured 1": 153198,
-    "Crater floor fractured rough": 304921,
-    "Delta truncated curvilinear layered": 136200,
-    "Delta thickly layered": 6163
+    "Delta blocky": 189996,
+    "Crater floor fractured 2": 4728,
+    "Delta thinly layered": 20226,
+    "Crater floor fractured 1": 302701,
+    "Crater floor fractured rough": 453984,
+    "Delta truncated curvilinear layered": 76923
   },
   "pixelsSurface": {
-    "Undifferentiated smooth": 294719,
-    "Aeolian bedforms, large": 250744,
-    "None": 366393,
-    "Aeolian bedforms, small": 9337,
-    "Talus": 32067,
-    "Moderate Cover Us": 27470,
-    "Minor Cover Us": 67809
+    "Undifferentiated smooth": 370476,
+    "Aeolian bedforms, large": 325067,
+    "None": 215613,
+    "Aeolian bedforms, small": 8255,
+    "Talus": 49920,
+    "Moderate Cover Us": 66992,
+    "Minor Cover Us": 12235
   },
-  "uncoveredPixels": 37
+  "uncoveredPixels": 18
 }
