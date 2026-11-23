@@ -262,11 +262,12 @@ async function main() {
         percPanel.update();
       }
       eye.setFrames(agent, truth, res, score);
-      void submitFrame(sim.earth, sim.novelty, agent, res, reliability, sim.clock.t);
+      submitFrame(sim.earth, sim.novelty, agent, res, reliability, sim.clock.t).catch((e) => console.warn('could not queue image for downlink', e));
       (window as unknown as { __frames: unknown }).__frames = { agent, truth }; // dev/test hook
     }
   });
-  (window as unknown as { __sim: Simulation }).__sim = sim;
+  (window as unknown as { __sim: Simulation; __view: unknown }).__sim = sim;
+  (window as unknown as { __view: unknown }).__view = { camera, controls }; // dev/test hook (screenshots, benchmark)
 }
 
 main().catch((e) => {

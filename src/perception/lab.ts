@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { findPath } from '../nav/astar';
 import { mulberry32 } from '../world/rng';
 import { C } from '../world/classes';
 import { sunAt } from '../sim/environment';
@@ -88,6 +89,26 @@ export function installLab(ctx: { renderer: THREE.WebGLRenderer; scene: THREE.Sc
         }
       }
       return { X, Y };
+    },
+    /** Time n A* searches of 100-600 m on the 1024 x 1024 grid. `withRocks` first marks every boulder as known (worst case). */
+    benchPath(n: number, seed: number, withRocks: boolean) {
+      const known = sim.agent.known;
+      if (withRocks) for (const r of sim.rocks) known.learnRock(r);
+      const rnd = mulberry32(seed);
+      const ms: number[] = [];
+      const expanded: number[] = [];
+      let found = 0;
+      const lim = half - 120;
+      for (let i = 0; i < n; i++) {
+        const sx = (rnd() * 2 - 1) * lim, sz = (rnd() * 2 - 1) * lim;
+        const ang = rnd() * Math.PI * 2, d = 100 + rnd() * 500;
+        const gx = Math.max(-lim, Math.min(lim, sx + Math.cos(ang) * d)), gz = Math.max(-lim, Math.min(lim, sz + Math.sin(ang) * d));
+        const t0 = performance.now();
+        const r = findPath(sim.grid, known.blocked, sx, sz, gx, gz);
+        ms.push(performance.now() - t0);
+        if (r.found) { found++; expanded.push(r.expanded); }
+      }
+      return { ms, found, expanded };
     },
     /** Run the detector + scorer on n random held-out frames. Returns per-class precision/recall and the reliability bins. */
     evaluate(model: DetectorModel | null, n: number, seed: number, parity: number) {

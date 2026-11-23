@@ -232,7 +232,7 @@ export class Detector {
         } else depth[k] = 0;
       }
     }
-    // Top-hat = height - opening(height). The structuring element is about 3 m wide, so it removes terrain
+    // Top-hat = height - opening(height). The structuring element is up to about 4 m wide (capped at close range by the image size), so it removes terrain
     // wider than a boulder and keeps compact bumps. One scale per depth band because pixel size grows with range.
     const bands = [0, 10, 30, 80, Infinity];
     const tops = bands.slice(0, -1).map((lo, bi) => {
