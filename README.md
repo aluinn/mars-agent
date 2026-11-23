@@ -8,16 +8,18 @@
 [![CodeQL](https://github.com/aluinn/mars-agent/actions/workflows/codeql.yml/badge.svg)](https://github.com/aluinn/mars-agent/actions/workflows/codeql.yml)
 [![License: MIT](https://img.shields.io/github/license/aluinn/mars-agent)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/aluinn/mars-agent?style=flat)](https://github.com/aluinn/mars-agent/stargazers)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Faluinn%2Fmars-agent)
+<a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Faluinn%2Fmars-agent"><img src="https://vercel.com/button" alt="Deploy with Vercel" height="20"></a>
 
 <!--
   HERO PLACEHOLDER: replace the screenshot below with a short screen recording or GIF of the rover driving
   (for example docs/assets/<your-recording>.gif or an uploaded GitHub video) when you have one.
-  LIVE DEMO: add your Vercel URL to the links row below after you deploy.
 -->
+
+**[▶ Try it live: mars-agent-blond.vercel.app](https://mars-agent-blond.vercel.app)**
+
 <img src="docs/assets/jezero-rover-driving-1600x900.jpg" alt="The rover driving across the megaripple field in Jezero Crater, with the chase camera, rover-eye detections and map visible" width="900">
 
-[Deploy](#deploy) · [Architecture](docs/ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md)
+[Live demo](https://mars-agent-blond.vercel.app) · [Deploy](#deploy) · [Architecture](docs/ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
@@ -110,7 +112,7 @@ It is a static site, so any static host works. On Vercel:
 
 1. Click **Deploy with Vercel** at the top of this page (or import the repo at <https://vercel.com/new>).
 2. Vercel detects Vite. The defaults are correct: build command `npm run build`, output directory `dist`, no environment variables.
-3. After the first deploy, add your URL to the links row above (see the marked comment).
+3. The live demo for this repo is at <https://mars-agent-blond.vercel.app>.
 
 The `public/data/` folder (4.4 MB) is served with the site.
 

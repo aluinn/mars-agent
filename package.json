@@ -9,7 +9,7 @@
     "type": "git",
     "url": "git+https://github.com/aluinn/mars-agent.git"
   },
-  "homepage": "https://github.com/aluinn/mars-agent#readme",
+  "homepage": "https://mars-agent-blond.vercel.app",
   "bugs": {
     "url": "https://github.com/aluinn/mars-agent/issues"
   },

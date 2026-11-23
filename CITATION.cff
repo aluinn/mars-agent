@@ -11,7 +11,7 @@ authors:
   - family-names: McDonald
     given-names: Aluinn
 repository-code: https://github.com/aluinn/mars-agent
-url: https://github.com/aluinn/mars-agent
+url: https://mars-agent-blond.vercel.app
 license: MIT
 version: 0.1.0
 date-released: '2026-11-23'
