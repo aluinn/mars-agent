@@ -168,7 +168,7 @@ export function buildGeology(hm: Heightmap, slope: Float32Array, units: Uint8Cla
       const si = units[k * 4 + 1]!;
       bedrock[k] = bi;
       surface[k] = si;
-      let cls: number = C.Regolith;
+      let cls: number;
       if (slope[k]! > STEEP_HAZARD_DEG) cls = C.HazardSteep;
       else if (bilinear(craterC, N, (i + 0.5) / f - 0.5, (j + 0.5) / f - 0.5) > 0.5) cls = C.Crater;
       else if (bilinear(chanC, N, (i + 0.5) / f - 0.5, (j + 0.5) / f - 0.5) > 0.4 && slope[k]! < 12) cls = C.Channel;

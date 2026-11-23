@@ -61,10 +61,6 @@ const stats = classes.map(([id, rows]) => {
 pooled.forEach((_, k) => (pooled[k] /= pn));
 stats.forEach((c) => (c.variance = c.variance.map((v, k) => Math.max(0.8 * v + 0.2 * pooled[k], 1e-6))));
 
-function posterior(model, x, T) {
-  const lp = model.classes.map((c) => Math.log(c.prior) + x.reduce((s, xi, k) => s - 0.5 * (Math.log(2 * Math.PI * c.variance[k]) + (xi - c.mean[k]) ** 2 / c.variance[k]), 0) / T);
-  const m = Math.max(...lp); const e = lp.map((v) => Math.exp(v - m)); const s = e.reduce((a, b) => a + b, 0); return e.map((v) => v / s);
-}
 // With temperature applied to the whole log posterior (prior + likelihood): replicate src/perception/detector.ts classifyTile.
 function post2(model, x) {
   const lp = model.classes.map((c) => (Math.log(c.prior) + x.reduce((s, xi, k) => s - 0.5 * (Math.log(2 * Math.PI * Math.max(c.variance[k], 1e-6)) + (xi - c.mean[k]) ** 2 / Math.max(c.variance[k], 1e-6)), 0)) / model.temperature);

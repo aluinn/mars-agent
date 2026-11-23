@@ -7,6 +7,3 @@ export const MARS_OBLIQUITY_DEG = 25.19;
 export const JEZERO_LAT_DEG = 18.4446;
 /** Perseverance auto-nav top speed is ~0.1 m/s or less (hazard-avoidance autonav is slower). */
 export const ROVER_MAX_SPEED = 0.1; // m/s
-/** One-way Earth-Mars light time range, minutes (min ~3.0 at closest, max ~22.3 at conjunction; commonly quoted 4-24). */
-export const LIGHT_TIME_MIN_MIN = 4;
-export const LIGHT_TIME_MAX_MIN = 24;

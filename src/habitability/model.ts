@@ -156,7 +156,6 @@ export class HabitabilityMap {
 
   private components(get: (cls: number) => Acc | undefined, saturation: number, slopeDeg: number, tau: number, localHours: number) {
     const s = (cls: ClassId) => this.strength(get(cls), cls, saturation);
-    let water = 0, energy = 0, shelter = 0, perch = 0, unstable = 0;
     const w: number[] = [], e: number[] = [], sh: number[] = [], pc: number[] = [], un: number[] = [];
     for (const k of Object.keys(RULES)) {
       const cls = Number(k) as ClassId;
@@ -169,7 +168,7 @@ export class HabitabilityMap {
       if (r.perchlorate) pc.push(v * r.perchlorate);
       if (r.unstable) un.push(v * r.unstable);
     }
-    water = noisyOr(w); energy = noisyOr(e); shelter = noisyOr(sh); perch = noisyOr(pc); unstable = noisyOr(un);
+    const water = noisyOr(w), energy = noisyOr(e), shelter = noisyOr(sh), perch = noisyOr(pc), unstable = noisyOr(un);
     const env = surfaceEnv(localHours, tau);
     const stability = Math.max(0, 1 - slopeDeg / 20) * (1 - 0.5 * unstable);
     const uv = (1 - shelter) * env.uvIndex;
