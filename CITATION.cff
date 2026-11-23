@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: Jezero Rover Agent
+abstract: >-
+  An autonomous rover agent simulation on real Jezero Crater terrain (a 2 km window of the 1 m HiRISE DTM and 25 cm
+  orthoimage, with the Stack et al. 2020 geologic map). The agent perceives through a simulated mast camera, plans
+  slope-aware drives under an energy budget, assesses evidence consistent with past habitable conditions, and
+  downlinks prioritised findings to Earth over a delayed, bandwidth-limited link.
+type: software
+authors:
+  - family-names: McDonald
+    given-names: Aluinn
+repository-code: https://github.com/aluinn/mars-agent
+url: https://github.com/aluinn/mars-agent
+license: MIT
+version: 0.1.0
+date-released: '2026-11-23'
+keywords:
+  - mars
+  - jezero crater
+  - rover
+  - simulation
+  - autonomous agents
+  - three.js
