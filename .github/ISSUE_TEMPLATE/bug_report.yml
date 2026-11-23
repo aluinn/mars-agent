@@ -1,0 +1,44 @@
+name: Bug report
+description: Something in the simulation, detector, UI or build is not working
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping. A short, specific report is the most useful. Please check the [FAQ in the README](https://github.com/aluinn/mars-agent/blob/main/README.md#faq) for known limitations first (for example, the detector is weak on mineral classes by design of the data).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you see instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. npm run dev
+        2. Set speed to 3600x
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Terrain / data, Rover navigation / energy, Camera / ground-truth pass, Detector / metrics, Habitability, Earth link, UI, Build / CI / tests, Docs]
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Browser, OS and GPU
+      placeholder: Chrome 131 on macOS 15, Apple M2
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output or screenshot
+      description: Open the browser dev tools console and paste any red errors. Screenshots help.
+      render: shell
