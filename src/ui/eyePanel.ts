@@ -121,6 +121,8 @@ export class EyePanel {
     // terrain regions first (large, thin), objects on top
     const dets = [...this.res.detections].sort((a, b) => (a.kind === 'terrain' ? 0 : 1) - (b.kind === 'terrain' ? 0 : 1));
     for (const d of dets) {
+      // Readability: small, low-confidence terrain fragments are not drawn (the stats still count them).
+      if (d.kind === 'terrain' && d.areaPx < 3000 && d.confidence < 0.25) continue;
       const outcome = this.compare ? this.score?.outcome.get(d.id) : undefined;
       const colour = this.compare ? (outcome === 'tp' ? '#4ade80' : outcome === 'fp' ? '#f87171' : '#9aa4b2') : classRgb(d.cls);
       o.strokeStyle = colour;
@@ -136,6 +138,7 @@ export class EyePanel {
       for (const r of this.score.truthRegions) {
         if (r.hit) continue;
         o.strokeRect(r.bbox.x0 + 1, r.bbox.y0 + 1, r.bbox.x1 - r.bbox.x0 - 2, r.bbox.y1 - r.bbox.y0 - 2);
+        if ((r.bbox.x1 - r.bbox.x0) * (r.bbox.y1 - r.bbox.y0) < 1500) continue; // tiny misses: dashed box only, no label
         const t = `missed: ${SHORT_NAME[r.cls] ?? r.cls}`;
         o.fillStyle = 'rgba(8,10,14,0.82)';
         o.fillRect(r.bbox.x0, r.bbox.y1 - 16, o.measureText(t).width + 8, 16);

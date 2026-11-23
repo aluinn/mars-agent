@@ -50,7 +50,7 @@ export class HabitabilityPanel {
     $('habFindings').innerHTML =
       v.findings
         .filter((f) => f.strength > 0.002 || f.sightings > 1)
-        .slice(0, 6)
+        .slice(0, 5)
         .map(
           (f) =>
             `<div class="find"><div class="fh"><b>${esc(f.label)}</b>${f.kind === 'negative' ? ' <span class="against">counts against</span>' : ''}<span class="dim small">${f.sightings.toFixed(1)} sightings · mean ${(f.meanConfidence * 100).toFixed(0)}%${f.precision !== null ? ` · detector precision ${(f.precision * 100).toFixed(0)}%` : ''}</span></div>` +
