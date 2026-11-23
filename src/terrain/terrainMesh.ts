@@ -5,7 +5,7 @@ import type { Heightmap } from './heightmap';
 
 const REGOLITH = CLASS_INFO[C.Regolith]!.albedo;
 /** 0 = every class looks like regolith, 1 = full class colours. */
-const CLASS_TINT = 0.55;
+const CLASS_TINT = 0.75;
 
 /** Optional real orthoimage luminance (HiRISE), same footprint as the heightmap. */
 export interface OrthoImage {

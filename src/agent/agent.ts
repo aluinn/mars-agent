@@ -4,6 +4,7 @@ import type { SimClock } from '../sim/clock';
 import { type Battery, type EnergyParams, type PowerMode, drivePowerW, loadW, solarPowerW } from '../sim/energy';
 import { secondsToSunCrossing, sunAt } from '../sim/environment';
 import type { Rover } from '../sim/rover';
+import type { Detection, DetectionResult, Detector } from '../perception/detector';
 import type { AgentFrame, CaptureRequest } from '../perception/types';
 import type { Rock } from '../world/rocks';
 import { KnownMap } from './knownMap';
@@ -52,6 +53,10 @@ export class Agent {
   /** Latest image the agent has seen. The agent never sees ground truth. */
   lastFrame: AgentFrame | null = null;
   framesTaken = 0;
+  /** Detector output for the latest frame, and a bounded memory of everything detected so far (input to habitability scoring). */
+  lastResult: DetectionResult | null = null;
+  readonly memory: (Detection & { t: number; sol: number })[] = [];
+  detector: Detector | null = null;
 
   constructor(
     private rover: Rover,
@@ -85,6 +90,10 @@ export class Agent {
     this.lastFrame = f;
     this.framesTaken++;
     this.detect(f);
+  }
+
+  setDetector(d: Detector | null): void {
+    this.detector = d;
   }
 
   get plannerName(): string {
@@ -166,8 +175,16 @@ export class Agent {
     }
   }
 
-  /** Hook: the mast-camera detector runs on each received frame from stage 4. */
-  private detect(_frame: AgentFrame): void {}
+  /** The mast-camera detector runs on each received frame: only the image and depth go in. */
+  private detect(frame: AgentFrame): void {
+    if (!this.detector) return;
+    const res = this.detector.detect(frame);
+    this.lastResult = res;
+    for (const d of res.detections) this.memory.push({ ...d, tiles: undefined, t: this.clock.t, sol: this.clock.sol });
+    if (this.memory.length > 800) this.memory.splice(0, this.memory.length - 800);
+    const top = [...res.detections].sort((a, b) => b.confidence - a.confidence).slice(0, 3).map((d) => `${d.name} ${(d.confidence * 100).toFixed(0)}%`);
+    this.say('detect', `${res.detections.length} detections in ${res.ms.toFixed(0)} ms${top.length ? ': ' + top.join(', ') : ''}`);
+  }
 
   private requestDecision(sunDeg: number): void {
     const lh = this.clock.localHours;

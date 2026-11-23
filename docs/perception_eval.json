@@ -1,0 +1,207 @@
+{
+  "when": "2026-11-23T09:58:39.584Z",
+  "frames": 60,
+  "detections": 1433,
+  "meanDetectorMs": 86.00333333263795,
+  "classes": [
+    {
+      "cls": 1,
+      "name": "regolith",
+      "precision": 0.3567567567567568,
+      "recall": 0.3384615384615385,
+      "tp": 66,
+      "fp": 119,
+      "total": 65,
+      "hit": 22
+    },
+    {
+      "cls": 2,
+      "name": "basalt",
+      "precision": 0.025,
+      "recall": 0.15384615384615385,
+      "tp": 3,
+      "fp": 117,
+      "total": 13,
+      "hit": 2
+    },
+    {
+      "cls": 3,
+      "name": "olivine-rich rock",
+      "precision": 0.3670886075949367,
+      "recall": 0.06451612903225806,
+      "tp": 29,
+      "fp": 50,
+      "total": 31,
+      "hit": 2
+    },
+    {
+      "cls": 5,
+      "name": "layered delta sediment",
+      "precision": 0.15294117647058825,
+      "recall": 0.5,
+      "tp": 13,
+      "fp": 72,
+      "total": 10,
+      "hit": 5
+    },
+    {
+      "cls": 6,
+      "name": "clay-rich outcrop",
+      "precision": 0.46153846153846156,
+      "recall": 0.16,
+      "tp": 18,
+      "fp": 21,
+      "total": 25,
+      "hit": 4
+    },
+    {
+      "cls": 7,
+      "name": "sand ripples/dunes",
+      "precision": 0.024390243902439025,
+      "recall": 0.42857142857142855,
+      "tp": 1,
+      "fp": 40,
+      "total": 7,
+      "hit": 3
+    },
+    {
+      "cls": 8,
+      "name": "boulder",
+      "precision": 0.27586206896551724,
+      "recall": 0.11650485436893204,
+      "tp": 24,
+      "fp": 63,
+      "total": 206,
+      "hit": 24
+    },
+    {
+      "cls": 9,
+      "name": "cobbles",
+      "precision": 0.29508196721311475,
+      "recall": 0.23376623376623376,
+      "tp": 18,
+      "fp": 43,
+      "total": 77,
+      "hit": 18
+    },
+    {
+      "cls": 10,
+      "name": "possible dried channel",
+      "precision": 0.034653465346534656,
+      "recall": 0.5,
+      "tp": 7,
+      "fp": 195,
+      "total": 18,
+      "hit": 9
+    },
+    {
+      "cls": 11,
+      "name": "crater",
+      "precision": 0.006134969325153374,
+      "recall": 0.5,
+      "tp": 1,
+      "fp": 162,
+      "total": 4,
+      "hit": 2
+    },
+    {
+      "cls": 12,
+      "name": "hazard: steep slope",
+      "precision": 0.41818181818181815,
+      "recall": 0.9142857142857143,
+      "tp": 23,
+      "fp": 32,
+      "total": 35,
+      "hit": 32
+    },
+    {
+      "cls": 13,
+      "name": "hazard: loose sand",
+      "precision": 0.6339622641509434,
+      "recall": 0.3220338983050847,
+      "tp": 168,
+      "fp": 97,
+      "total": 59,
+      "hit": 19
+    }
+  ],
+  "reliability": [
+    {
+      "n": 222,
+      "tp": 58,
+      "sumConf": 11.417199779222482
+    },
+    {
+      "n": 596,
+      "tp": 172,
+      "sumConf": 97.63265054257823
+    },
+    {
+      "n": 460,
+      "tp": 97,
+      "sumConf": 108.41897939136823
+    },
+    {
+      "n": 62,
+      "tp": 29,
+      "sumConf": 20.777344920663573
+    },
+    {
+      "n": 5,
+      "tp": 1,
+      "sumConf": 2.1977761752922556
+    },
+    {
+      "n": 15,
+      "tp": 6,
+      "sumConf": 8.076100631536452
+    },
+    {
+      "n": 6,
+      "tp": 5,
+      "sumConf": 3.9091375883009185
+    },
+    {
+      "n": 5,
+      "tp": 1,
+      "sumConf": 3.6201962232448555
+    },
+    {
+      "n": 8,
+      "tp": 2,
+      "sumConf": 6.8277669325864805
+    },
+    {
+      "n": 3,
+      "tp": 0,
+      "sumConf": 2.7886616044398895
+    }
+  ],
+  "model": {
+    "temperature": 4.887,
+    "trainedOn": {
+      "frames": 150,
+      "tiles": 39627,
+      "blocks": "even 400 m checkerboard blocks"
+    },
+    "calibratedOn": {
+      "frames": 40,
+      "tiles": 10030,
+      "blocks": "odd 400 m blocks"
+    },
+    "heldOutTileAccuracy": 0.3311,
+    "heldOutPerClassTileAccuracy": {
+      "regolith": 0.406,
+      "basalt": 0.279,
+      "olivine-rich rock": 0.086,
+      "layered delta sediment": 0.201,
+      "clay-rich outcrop": 0.261,
+      "sand ripples/dunes": 0.004,
+      "possible dried channel": 0.669,
+      "crater": 0.275,
+      "hazard: steep slope": 0.971,
+      "hazard: loose sand": 0.221
+    },
+    "note": "Gaussian naive Bayes on 12 haze-corrected, lighting-robust tile features (incl. 3x3 context); synthetic labels from the simulator ground-truth pass."
+  }
+}

@@ -32,6 +32,7 @@
           <label title="Local time of day">☀ <input id="timeSlider" type="range" min="0" max="24" step="0.05" value="8" /></label>
           <label title="Dust opacity (tau)">τ <input id="tauSlider" type="range" min="0.2" max="4" step="0.05" value="0.6" /></label>
         </div>
+        <button id="percBtn" title="Perception statistics (P)">Perception</button>
         <div class="chip env-readout"><span id="sunChip">sun —</span><i></i><span id="tauChip">τ —</span></div>
       </header>
 
@@ -77,7 +78,11 @@
                 <svg viewBox="0 0 24 24" width="15" height="15"><path d="M9 4l-1.5 2H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-2.5L15 4zM12 9a3.5 3.5 0 110 7 3.5 3.5 0 010-7z" fill="currentColor"/></svg>
               </button>
             </header>
-            <div class="eye-frame"><canvas id="eyeCanvas" width="640" height="480"></canvas><div class="eye-empty" id="eyeEmpty">Waiting for the first image…</div></div>
+            <div class="eye-frame"><canvas id="eyeCanvas" width="640" height="480"></canvas><canvas id="eyeOverlay" width="640" height="480"></canvas><div class="eye-empty" id="eyeEmpty">Waiting for the first image…</div></div>
+            <div class="eye-toggles">
+              <button id="togDet" class="tog on" title="Draw the agent's detections">Detections</button>
+              <button id="togCmp" class="tog" title="Colour detections by correctness against hidden ground truth; dashed yellow = missed">Compare with truth</button>
+            </div>
             <div id="eyeInfo" class="dim small">no image yet</div>
           </section>
           <section class="card" id="mapCard">
@@ -87,7 +92,14 @@
           </section>
         </aside>
 
-        <footer id="hints" class="dim small">Space pause · 1–5 speed · O / F camera · C capture · drag to orbit, scroll to zoom</footer>
+        <section class="card" id="percCard" hidden>
+          <header class="card-h"><h3>Perception · detector vs ground truth</h3><span class="dim small" id="percNote"></span></header>
+          <div class="perc-head"><span>class</span><span>precision</span><span>recall</span><span>correct</span><span>found</span></div>
+          <div id="percRows"></div>
+          <div class="perc-foot"><span id="percFoot" class="dim small"></span><span class="dim small">confidence → accuracy</span><div id="percStrip"></div></div>
+        </section>
+
+        <footer id="hints" class="dim small">Space pause · 1–5 speed · O / F camera · C capture · P perception · drag to orbit, scroll to zoom</footer>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

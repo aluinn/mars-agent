@@ -13,6 +13,11 @@ import { MiniMap } from './ui/minimap';
 import { EyePanel } from './ui/eyePanel';
 import { MastCamera } from './perception/mastCamera';
 import { IdSpace, rockIdMaterial, terrainIdMaterial } from './perception/idPass';
+import { Detector } from './perception/detector';
+import { loadDetectorModel } from './perception/modelLoader';
+import { Metrics, scoreFrame } from './perception/scoring';
+import { PerceptionPanel } from './ui/perceptionPanel';
+import { installLab } from './perception/lab';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -27,7 +32,7 @@ async function main() {
   renderer.shadowMap.autoUpdate = false; // refreshed when the sun moves and a few times a second for the rover shadow
   view.prepend(renderer.domElement);
 
-  const world = await loadWorld();
+  const [world, model] = await Promise.all([loadWorld(), loadDetectorModel()]);
   const hm = world.hm;
   const sim = new Simulation(world);
   const half = hm.sizeMetres / 2;
@@ -53,6 +58,10 @@ async function main() {
   roverView.group.userData.overlay = true;
   pathLine.line.userData.overlay = true;
   const mastCam = new MastCamera(ids.lookup);
+  const metrics = new Metrics();
+  const percPanel = new PerceptionPanel(metrics, model !== null);
+  sim.agent.setDetector(new Detector(model));
+  installLab({ renderer, scene, env, mastCam, sim });
   const eye = new EyePanel($('eyeCanvas') as HTMLCanvasElement, $('eyeInfo'), document.querySelector('#eyeCard .tabs') as HTMLElement);
   const hud = new Hud(sim);
   const minimap = new MiniMap($('mapCanvas') as HTMLCanvasElement, world, sim.agent.known);
@@ -223,7 +232,14 @@ async function main() {
         { simTime: sim.clock.t, sol: sim.clock.sol, localHours: sim.clock.localHours, sunElevationDeg: (sun.elevation * 180) / Math.PI, sunAzimuthDeg: (sun.azimuth * 180) / Math.PI, tau: sim.tau },
       );
       sim.agent.receiveFrame(agent); // the agent gets the image + depth only
-      eye.setFrames(agent, truth); // the UI/evaluator also gets the hidden ground truth
+      // Evaluation only: score the agent's detections against the hidden ground truth (the agent never sees this).
+      const res = sim.agent.lastResult;
+      const score = res ? scoreFrame(res, agent, truth) : null;
+      if (res && score) {
+        metrics.add(res.detections, score, res.ms);
+        percPanel.update();
+      }
+      eye.setFrames(agent, truth, res, score);
       (window as unknown as { __frames: unknown }).__frames = { agent, truth }; // dev/test hook
     }
   });
