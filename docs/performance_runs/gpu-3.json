@@ -1,0 +1,67 @@
+{
+  "when": "2026-11-23T11:10:53.400Z",
+  "machine": {
+    "cpu": "Apple M1 Pro",
+    "cores": 8,
+    "memoryGB": 16,
+    "os": "Darwin 24.6.0",
+    "node": "v24.20.0"
+  },
+  "browser": {
+    "gpuMode": "metal",
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Pro, Unspecified Version)",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/159.0.8154.6 Safari/537.36",
+    "viewport": "1600x900",
+    "devicePixelRatio": 1
+  },
+  "loadMs": 1570,
+  "frameMs": {
+    "n": 370,
+    "mean": 22.34135135135135,
+    "p50": 16.699999999999818,
+    "p95": 16.80000000000109,
+    "p99": 166.59999999999854,
+    "max": 166.70000000000073
+  },
+  "frameMsNoCaptures": {
+    "n": 370,
+    "mean": 16.66594594594594,
+    "p50": 16.69999999999709,
+    "p95": 16.799999999999272,
+    "p99": 16.80000000000291,
+    "max": 16.80000000000291
+  },
+  "imagesTakenDuringFrameRun": 19,
+  "captureMs": {
+    "n": 18,
+    "mean": 46.92222222189108,
+    "p50": 46.900000005960464,
+    "p95": 52,
+    "p99": 52,
+    "max": 52
+  },
+  "detectorMsPerFrame": 86.05833333233993,
+  "detectorFrames": 24,
+  "pathMs": {
+    "noKnownRocks": {
+      "n": 60,
+      "mean": 5.940000000099341,
+      "p50": 2.300000011920929,
+      "p95": 37,
+      "p99": 61.29999998211861,
+      "max": 61.29999998211861,
+      "found": 53,
+      "meanExpanded": 21995.79245283019
+    },
+    "allBouldersKnown": {
+      "n": 60,
+      "mean": 4.773333333432674,
+      "p50": 2.199999988079071,
+      "p95": 27.200000017881393,
+      "p99": 53.79999998211861,
+      "max": 53.79999998211861,
+      "found": 52,
+      "meanExpanded": 18136.19230769231
+    }
+  }
+}

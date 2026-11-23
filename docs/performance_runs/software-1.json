@@ -1,0 +1,67 @@
+{
+  "when": "2026-11-23T11:26:06.057Z",
+  "machine": {
+    "cpu": "Apple M1 Pro",
+    "cores": 8,
+    "memoryGB": 16,
+    "os": "Darwin 24.6.0",
+    "node": "v24.20.0"
+  },
+  "browser": {
+    "gpuMode": "swiftshader",
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/159.0.8154.6 Safari/537.36",
+    "viewport": "1600x900",
+    "devicePixelRatio": 1
+  },
+  "loadMs": 4968,
+  "frameMs": {
+    "n": 60,
+    "mean": 3306.258333333333,
+    "p50": 3099.8000000000175,
+    "p95": 14399.399999999994,
+    "p99": 16932.600000000006,
+    "max": 16932.600000000006
+  },
+  "frameMsNoCaptures": {
+    "n": 60,
+    "mean": 2953.491666666667,
+    "p50": 2983.2000000000116,
+    "p95": 3166.5,
+    "p99": 3266.5,
+    "max": 3266.5
+  },
+  "imagesTakenDuringFrameRun": 12,
+  "captureMs": {
+    "n": 18,
+    "mean": 1589.927777778771,
+    "p50": 1587,
+    "p95": 1635.0999999940395,
+    "p99": 1635.0999999940395,
+    "max": 1635.0999999940395
+  },
+  "detectorMsPerFrame": 85.54583333681028,
+  "detectorFrames": 24,
+  "pathMs": {
+    "noKnownRocks": {
+      "n": 60,
+      "mean": 5.850000000496705,
+      "p50": 2.0999999940395355,
+      "p95": 38.900000005960464,
+      "p99": 60.5,
+      "max": 60.5,
+      "found": 53,
+      "meanExpanded": 21995.79245283019
+    },
+    "allBouldersKnown": {
+      "n": 60,
+      "mean": 4.745000000298023,
+      "p50": 1.800000011920929,
+      "p95": 28.099999994039536,
+      "p99": 53,
+      "max": 53,
+      "found": 52,
+      "meanExpanded": 18136.19230769231
+    }
+  }
+}
