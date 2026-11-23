@@ -31,6 +31,22 @@ The renderer surrounds the real patch with 8 **mirrored** copies of it so the ho
 - Rocks, cobbles and other small objects in the simulation are synthetic scene objects placed on top of the real terrain. They are not mapped from imagery.
 - The fine-scale "grain" in the terrain shader (value noise, fading out beyond about 250 m) is cosmetic detail, not elevation data.
 
+## Terrain texture: HiRISE orthoimage (real data, 25 cm)
+
+| Field | Value |
+| --- | --- |
+| Product | Mars 2020 TRN HiRISE orthorectified image mosaic, `JEZ_hirise_soc_006_orthoMosaic_25cm_Eqc_latTs0_lon0_first.tif` |
+| Publisher | USGS Astrogeology Science Center with JPL (MRO HiRISE) |
+| Download | https://planetarymaps.usgs.gov/mosaic/mars2020_trn/HiRISE/JEZ_hirise_soc_006_orthoMosaic_25cm_Eqc_latTs0_lon0_first.tif (7.4 GB; we read only our window over HTTP range requests, roughly 700 MB of reads estimated from the row size, not measured) |
+| Format | 85,600 x 85,952 px, 8-bit greyscale (HiRISE red band), 0.25 m/px, same footprint and CRS as the DTM |
+| Licence | **Not verified**, same status as the DTM. Check before redistributing the raw file |
+
+`scripts/prepare_ortho.py` cuts the matching window and area-averages it to **4096 x 4096** (0.49 m per texel), saved as a greyscale JPEG at quality 90 (`public/data/jezero_ortho.jpg`, 3.2 MB).
+
+What is real and what is not: the **brightness** of every texel is the real orbital image, so real boulders, ripples, bedding and shadows show through. The **colour** is synthetic, because the orthoimage is greyscale: each ground-truth class has a typical colour that is blended 75% toward it over the real luminance (`CLASS_TINT` in `src/terrain/terrainMesh.ts`). The orthoimage carries its own baked-in sun shading, which doubles up with the simulation's lighting in places.
+
+The same image is the basemap of the minimap.
+
 ## Geology: Stack et al. (2020) photogeologic map (real polygons, assumed minerals)
 
 | Field | Value |
@@ -77,3 +93,21 @@ Priority per pixel: steep slope (> 25 deg, from the DEM) > crater (DEM) > possib
 ## Mars constants
 
 Gravity 3.71 m/s2, mean solar day 24 h 39 m 35.244 s, obliquity 25.19 deg, Jezero latitude 18.4446 N. Values are in `src/sim/constants.ts`.
+
+## Detector training data (synthetic)
+
+The terrain classifier is trained on frames rendered by this simulator, labelled by its own hidden ID pass, so it learns the appearance of the simulator's classes, not of real Mars imagery. The protocol, sample sizes and results are in `docs/PERCEPTION.md`; the trained model is `public/data/detector_model.json` and the per-class measurements are `public/data/perception_eval.json` (a copy of `docs/perception_eval.json`).
+
+## Assumptions that are not data
+
+These parameters are illustrative, set in code, and labelled as assumptions where they are used:
+
+| Parameter | Where | Note |
+| --- | --- | --- |
+| Rover power: 1200 Wh battery, 1.3 m2 solar array at 25%, 35 W idle, 100 W driving, 20 W hibernating | `src/sim/energy.ts` | A hypothetical solar rover. Perseverance runs on a nuclear MMRTG. Mass (1025 kg) and gravity (3.71 m/s2) are real |
+| Relay passes: two per sol, 9 minutes each, 2.5 kb/s | `src/earth/link.ts` | Deliberately small so the queue has to ration; real data rates are far higher |
+| Radio draw 15 W while transmitting | `src/sim/simulation.ts` | Assumed |
+| Light time: circular coplanar orbits, 4.4 to 21 min, 11.3 min at the start | `src/earth/lightTime.ts` | Simplified; the real range is roughly 3 to 22 min |
+| Surface temperature: 228 K mean, 40 K swing damped by dust | `src/habitability/environment.ts` | Illustrative |
+| Habitability rule weights and verdict thresholds | `src/habitability/rules.ts`, `model.ts` | Our choices from general astrobiology rationale, not measurements |
+| Camera height 2.1 m, sensor noise 2.5 grey levels | `src/perception/types.ts` | Assumed (field of view and pixel scale are from Bell et al. 2021) |
